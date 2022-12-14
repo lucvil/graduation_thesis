@@ -2,6 +2,7 @@ import json
 import sys
 from add_encry_module import add_encrypt
 from full_encry_module import full_encrypt
+import time
 
 #jsonデータとコレクション名を受け取りMongoDBにデータを挿入する
 def insert_data(json_name,collection_name):
@@ -20,7 +21,6 @@ def insert_data(json_name,collection_name):
 	# mul_encrypted_json_data = mul_encrypt_json(plain_json_data,mul_collection_name)
 	full_encrypted_json_data = full_encrypt.full_encrypt_json(plain_json_data,full_collection_name)
 
-	# print(add_encrypted_json_data)
 	return full_encrypted_json_data
 
 
@@ -31,9 +31,19 @@ def main():
 	# insert json
 	json_name = sys.argv[1]
 	collection_name = sys.argv[2]
+
+	time_sta = time.perf_counter()
 	result = insert_data(json_name,collection_name)
 	with open("./encrypted_text.json", "w") as f:
 		json.dump(result, f, indent = 4)
+	time_end = time.perf_counter()
+
+	with open("time.json", "w") as f:
+		time_result = {
+			"full_encry_time": time_end - time_sta
+		}
+		json.dump(time_result, f, indent = 4)
+		
 
 	# #decrypt json
 	# json_name = sys.argv[1]
