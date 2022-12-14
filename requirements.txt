@@ -1,0 +1,9 @@
+###### Requirements without Version Specifiers ######`
+Pyfhel
+phe
+numpy
+
+pymongo
+
+
+###### Requirements with Version Specifiers ######`
