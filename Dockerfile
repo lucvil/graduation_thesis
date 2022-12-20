@@ -32,3 +32,7 @@ RUN apt-get update && apt-get install -y mongodb-org
 #mongod --fork --config /etc/mongod.conf
 #mongoshで入れるようになる
 
+#コンテナに入るには
+#docker ps でコンテナIDをみる
+#docker container exec -it コンテナID bash
+

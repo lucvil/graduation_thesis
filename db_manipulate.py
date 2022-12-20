@@ -3,6 +3,19 @@ import sys
 from add_encry_module import add_encrypt
 from full_encry_module import full_encrypt
 import time
+from pymongo import MongoClient
+
+class TestMongo(object):
+
+	def __init__(self):
+		self.clint = MongoClient()
+		self.db = self.clint['test']
+
+	def add_one(self,json_input,db_name):
+		"""データ挿入"""
+		post = json_input
+		return self.db[db_name].insert_one(post)
+
 
 #jsonデータとコレクション名を受け取りMongoDBにデータを挿入する
 def insert_data(json_name,collection_name):
@@ -20,6 +33,13 @@ def insert_data(json_name,collection_name):
 	# add_encrypted_json_data = add_encrypt.add_encrypt_json(plain_json_data,add_collection_name)
 	# mul_encrypted_json_data = mul_encrypt_json(plain_json_data,mul_collection_name)
 	full_encrypted_json_data = full_encrypt.full_encrypt_json(plain_json_data,full_collection_name)
+
+	# #mongodbに挿入
+	# mongodb = TestMongo()
+	# mongodb.add_one(full_encrypted_json_data,full_collection_name)
+	# del full_encrypted_json_data["_id"]
+
+
 
 	return full_encrypted_json_data
 

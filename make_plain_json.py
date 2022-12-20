@@ -12,11 +12,11 @@ def randomfloat(n):
 
 str_json = {}
 
-for i in range(100):
+for i in range(1):
 	key = randomname(20)
 	value = np.round(randomfloat(7), decimals=3)
 	str_json[key] = value
 
 
-f = open('test_plain.json', 'w')
+f = open('plain_text.json', 'w')
 json.dump(str_json, f, ensure_ascii=False, indent=4, separators=(',', ': '))

@@ -1,4 +1,5 @@
 from phe import paillier
+import time
 
 public_key, private_key = paillier.generate_paillier_keypair()
 
@@ -15,9 +16,18 @@ public_key, private_key = paillier.generate_paillier_keypair()
 # print(encrypted_number_list)
 # print(decrypted_number_list)
 
-encrypted = (public_key.encrypt(3))
-encrypted_cipher = encrypted.ciphertext()
-print(public_key.encrypt(3).ciphertext(),public_key.encrypt(3).ciphertext())
+#暗号化→暗号文を数値化→復号
+# encrypted = (public_key.encrypt(3))
+# encrypted_cipher = encrypted.ciphertext()
+# print(public_key.encrypt(3).ciphertext(),public_key.encrypt(3).ciphertext())
 
-encrypted_ob = paillier.EncryptedNumber(public_key,encrypted_cipher)
-print(private_key.decrypt(encrypted_ob))
+# encrypted_ob = paillier.EncryptedNumber(public_key,encrypted_cipher)
+# print(private_key.decrypt(encrypted_ob))
+
+#暗号文を数値化しない
+time_sta = time.perf_counter()
+
+encrypted = (public_key.encrypt(3))
+
+time_end = time.perf_counter()
+print(encrypted)

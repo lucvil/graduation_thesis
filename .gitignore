@@ -2,5 +2,5 @@ full_encry_module/full_key.pub
 add_encry_module/add_key.pub
 plain_text.json
 encrypted_text.json
-test_plain.json
+sample.json
 time.json

@@ -110,12 +110,9 @@ def add_decrypt_one(data,collection_name):
 		return data
 
 
-
-
 #encrypt json
 #add_encrypt_oneによりadd_encyptされた暗号文はint型に直される
 def add_encrypt_json(plain_json,collection_name):
-
 	result = json_mun.func_json_data(add_encrypt_one,plain_json,collection_name)
 	return result
 
