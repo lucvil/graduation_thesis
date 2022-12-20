@@ -30,9 +30,9 @@ def insert_data(json_name,collection_name):
 
 	#ここからは非同期(要修正)
 	#plain_json_dataを暗号化
-	# add_encrypted_json_data = add_encrypt.add_encrypt_json(plain_json_data,add_collection_name)
+	add_encrypted_json_data = add_encrypt.add_encrypt_json(plain_json_data,add_collection_name)
 	# mul_encrypted_json_data = mul_encrypt_json(plain_json_data,mul_collection_name)
-	full_encrypted_json_data = full_encrypt.full_encrypt_json(plain_json_data,full_collection_name)
+	# full_encrypted_json_data = full_encrypt.full_encrypt_json(plain_json_data,full_collection_name)
 
 	# #mongodbに挿入
 	# mongodb = TestMongo()
@@ -41,7 +41,7 @@ def insert_data(json_name,collection_name):
 
 
 
-	return full_encrypted_json_data
+	return add_encrypted_json_data
 
 
 
@@ -60,7 +60,7 @@ def main():
 
 	with open("time.json", "w") as f:
 		time_result = {
-			"full_encry_time": time_end - time_sta
+			"add_encry_time": time_end - time_sta
 		}
 		json.dump(time_result, f, indent = 4)
 		
@@ -77,5 +77,5 @@ def main():
 if __name__ == '__main__':
     main()
 
-#実行
-#python db_manipulate.py plain_text.json test
+#実行 第三引数->plainTextFile 第四引数->データベースの名前
+#python db_manipulate.py new_confirm_copy.json test
