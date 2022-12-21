@@ -1,7 +1,10 @@
 from phe import paillier
 import time
+import phe
 
 public_key, private_key = paillier.generate_paillier_keypair()
+
+#暗号文同士の足し算、引き算及び暗号文と平文との四則演算が可能
 
 
 
@@ -25,9 +28,18 @@ public_key, private_key = paillier.generate_paillier_keypair()
 # print(private_key.decrypt(encrypted_ob))
 
 #暗号文を数値化しない
-time_sta = time.perf_counter()
+# time_sta = time.perf_counter()
 
-encrypted = (public_key.encrypt(3))
+E1 = (public_key.encrypt(-4))
+E2 = (public_key.encrypt(8))
+E3 = (public_key.encrypt(10000000000000000000000000))
 
-time_end = time.perf_counter()
-print(encrypted)
+EA = 0
+EA = E3 * -4
+ 
+
+DA = private_key.decrypt(EA)
+
+
+# time_end = time.perf_counter()
+print(DA)

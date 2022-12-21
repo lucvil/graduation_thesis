@@ -5,6 +5,8 @@ sys.path.append('../')
 from json_mun_module import json_mun
 import phe
 from phe import paillier
+import statistics
+
 
 # record key_pair in file
 def add_keypair_dump_jwk(pub, priv, collection_name, date=None):
@@ -121,6 +123,42 @@ def add_encrypt_json(plain_json,collection_name):
 def add_decrypt_json(encrypted_json, collection_name):
 	result = json_mun.func_json_data(add_decrypt_one, encrypted_json,collection_name)
 	return result
+
+
+
+#caluculate系はまだテストしていない
+#caluculate sum from list
+def add_caluculate_sum(encrypted_list, collection_name):
+	encrypted_sum = 0
+	for i in range(len(encrypted_list)):
+		encrypted_sum += encrypted_list[i]
+	
+	return encrypted_sum
+
+
+#caluculate average from list
+def add_caluculate_average(encrypted_list, collection_name):
+	encrypted_sum = 0
+	for i in range(len(encrypted_list)):
+		encrypted_sum += encrypted_list[i]
+	
+	encrypted_average = encrypted_sum / len(encrypted_list)
+
+	return encrypted_average
+
+
+#caluculate stdev(標準偏差) from list
+#全てのデータを復号して計算し暗号化し直す
+def add_caluculate_stdev(encrypted_list, collection_name):
+	#標準偏差を求めるため一回復号する
+	#この時本来であればユーザーとの通信が入るためダミー時間のsleepを設けること
+	public_key, private_key = add_keypair_load_jwk(collection_name)
+	decrypted_number_list = [private_key.decrypt(x) for x in encrypted_list]
+	plain_stdev = statistics.pstdev(decrypted_number_list)
+	encrypted_stdev = public_key.encrypt(plain_stdev)
+
+	return encrypted_stdev
+
 
 
 # def main():
