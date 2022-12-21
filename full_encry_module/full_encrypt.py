@@ -4,6 +4,7 @@ sys.path.append('../')
 from json_mun_module import json_mun
 from Pyfhel import Pyfhel, PyCtxt, PyPtxt
 import numpy as np
+import copy
 
 #record key_pair in file
 def full_keypair_store(HE, collection_name):
@@ -120,6 +121,12 @@ def full_decrypt_json(encrypted_json, collection_name):
 #今の所実装していないが計算しすぎるとError:scale out of boundsするので、
 # 本当はtry文でエラー検知し復号->暗号化し直す必要がある
 # 掛け算を8回ぐらいするとアウト、足し算は基本的には問題ない
+
+# 注意
+# 足し算するときはそれぞれのparamaterを揃える必要がある
+# 具体的には足し算、掛け算をするときはそれぞれの数が今まで行ってきた掛け算の数を同じにする必要がある。
+# 0とciphertextを足すのも基本的には禁止
+# でないとValueError: encrypted1 and encrypted2 parameter mismatchが出る
 def full_caluculate_sum(encrypted_list, collection_name):
 	# 十六進法文字列の配列をPyCtxt型の配列に直す
 	HE = full_keypair_load(collection_name)
@@ -127,8 +134,11 @@ def full_caluculate_sum(encrypted_list, collection_name):
 	cipher_pyctxt = [PyCtxt(pyfhel=HE, bytestring=cipher_bytes_item) for cipher_bytes_item in cipher_bytes]
 
 	#計算
-	encrypted_sum_pyctxt = 0
-	for cipher_pyctxt_item in cipher_pyctxt:
+	#ただ代入するだけだと代入元と代入先で同じメモリを参照することになる。
+	#これで引き算をすると同じメモリを参照しているもの同士の引き算となりエラーを出す
+	#その場合RuntimeError: result ciphertext is transparentを出す
+	encrypted_sum_pyctxt = cipher_pyctxt[0].copy()
+	for cipher_pyctxt_item in cipher_pyctxt[1:]:
 		encrypted_sum_pyctxt += cipher_pyctxt_item
 		~encrypted_sum_pyctxt
 	
@@ -147,8 +157,8 @@ def full_caluculate_average(encrypted_list, collection_name):
 	cipher_pyctxt = [PyCtxt(pyfhel=HE, bytestring=cipher_bytes_item) for cipher_bytes_item in cipher_bytes]
 
 	#計算
-	encrypted_sum_pyctxt = 0
-	for cipher_pyctxt_item in cipher_pyctxt:
+	encrypted_sum_pyctxt = cipher_pyctxt[0].copy()
+	for cipher_pyctxt_item in cipher_pyctxt[1:]:
 		encrypted_sum_pyctxt += cipher_pyctxt_item
 		~encrypted_sum_pyctxt
 	encrypted_average_pyctxt = encrypted_sum_pyctxt / len(encrypted_list)
@@ -168,19 +178,31 @@ def full_caluculate_stdev(encrypted_list, collection_name):
 	cipher_pyctxt = [PyCtxt(pyfhel=HE, bytestring=cipher_bytes_item) for cipher_bytes_item in cipher_bytes]
 
 	#計算
-	encrypted_sum_pyctxt = 0
-	encrypted_squares_sum_pyctxt = 0
-	for cipher_pyctxt_item in cipher_pyctxt:
-		encrypted_sum_pyctxt += cipher_pyctxt_item
-		encrypted_squares_sum_pyctxt += ~(cipher_pyctxt_item ** 2)
-		~encrypted_sum_pyctxt
-		~encrypted_squares_sum_pyctxt
+	# encrypted_sum_pyctxt = cipher_pyctxt[0]
+	# encrypted_squares_sum_pyctxt = cipher_pyctxt[0] ** 2
+	# for cipher_pyctxt_item in cipher_pyctxt[1:]:
+	# 	encrypted_sum_pyctxt += cipher_pyctxt_item
+	# 	encrypted_squares_sum_pyctxt += ~(cipher_pyctxt_item**2)
+		
+	# 	~encrypted_sum_pyctxt
+	# 	~encrypted_squares_sum_pyctxt
 	
-	encrypted_average_pyctxt = encrypted_sum_pyctxt / len(encrypted_list)
-	~encrypted_average_pyctxt
-	encrypted_stdev_pyctxt = ~(~(encrypted_squares_sum_pyctxt / len(encrypted_list)) - ~(encrypted_average_pyctxt ** 2))
+	# encrypted_average_pyctxt = encrypted_sum_pyctxt / len(encrypted_list)
+	# ~encrypted_average_pyctxt
+	# encrypted_stdev_pyctxt = ~(~(encrypted_squares_sum_pyctxt / len(encrypted_list)) - ~(encrypted_average_pyctxt ** 2))
 
+	#計算
+	encrypted_sum_pyctxt = cipher_pyctxt[0].copy()
+	for cipher_pyctxt_item in cipher_pyctxt[1:]:
+		encrypted_sum_pyctxt += cipher_pyctxt_item
+		~encrypted_sum_pyctxt
+	encrypted_average_pyctxt = encrypted_sum_pyctxt / len(encrypted_list)
 	
+	encrypted_stdev_pyctxt = (cipher_pyctxt[0] - encrypted_average_pyctxt) ** 2
+	for cipher_pyctxt_item in cipher_pyctxt[1:]:
+		encrypted_stdev_pyctxt += (cipher_pyctxt_item - encrypted_average_pyctxt) ** 2
+
+
 	#答えを16進法文字列に直す
 	encrypted_stdev_bytes = encrypted_stdev_pyctxt.to_bytes()
 	encrypted_stdev_str16 = encrypted_stdev_bytes.hex()

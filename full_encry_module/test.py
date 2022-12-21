@@ -50,14 +50,13 @@ HE_f.from_bytes_relin_key(bytes.fromhex(read_data["a"]["relin_key"]))
 
 
 #int型の暗号化・復号
-integer1 = np.array([7.0], dtype=np.float64)
-integer2 = np.array([-2.1], dtype=np.float64)
-print(integer1)
+integer1 = np.array([1], dtype=np.float64)
+integer2 = np.array([2], dtype=np.float64)
 ctxt1 = HE_f.encryptFrac(integer1) # Encryption makes use of the public key
 ctxt2 = HE_f.encryptFrac(integer2) # For integers, encryptInt function is used.
-print("3. Integer Encryption, ")
-print("    int ",integer1,'-> ctxt1 ', type(ctxt1))
-print("    int ",integer2,'-> ctxt2 ', type(ctxt2))
+# print("3. Integer Encryption, ")
+# print("    int ",integer1,'-> ctxt1 ', type(ctxt1))
+# print("    int ",integer2,'-> ctxt2 ', type(ctxt2))
 c_b = ctxt1.to_bytes()
 c_b_str = c_b.hex()
 
@@ -68,19 +67,37 @@ c_b_str = c_b.hex()
 # c_b_str_dec = hex(c_b_int)[2:]
 
 c_b_dec = bytes.fromhex(c_b_str)
-if c_b == c_b_dec:
-	print("complete")
+# if c_b == c_b_dec:
+# 	print("complete")
 
 new_ctxt1 = PyCtxt(pyfhel=HE_f, bytestring=c_b_dec)
 
+c_b2 = ctxt2.to_bytes()
+c_b2_str = c_b2.hex()
+c_b2_dec = bytes.fromhex(c_b2_str)
+new_ctxt2 = PyCtxt(pyfhel=HE_f, bytestring=c_b2_dec)
+
 ctxt_x = new_ctxt1
-ctxt_y = ctxt2
-ctxt_x *= ctxt_x
-ctxt_y *= ctxt_y
+ctxt_y = new_ctxt2
+ctxt_xy = (new_ctxt1 + new_ctxt2) / 2
+x2 = ctxt_x ** 2
+y2 = ctxt_y ** 2
+
+print("ctxt_a",ctxt_a)
+print("x2",x2)
+print("y2",y2)
+# ctxt_a += ctxt_x
+print("ctxt_a",ctxt_a)
+ctxt_a += y2
+print("ctxt_a",ctxt_a)
+
+
+
+
+
 
 _r = lambda x: np.round(x, decimals=6)[:4]
-ctxt_a = 0 + ctxt_x
-print(f"res {_r(HE.decryptFrac(ctxt_x))} ")
+print(f"res {_r(HE.decryptFrac(ctxt_a))} ")
 #n multiple test
 # n_mults = 10
 # _r = lambda x: np.round(x, decimals=6)[:4]

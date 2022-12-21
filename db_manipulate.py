@@ -25,14 +25,12 @@ def insert_data(json_name,collection_name):
 	plain_json_data = json.load(json_file)
 
 	add_collection_name = "add_" + collection_name
-	mul_collection_name = "mul_" + collection_name
 	full_collection_name = "full_" + collection_name
 
 	#ここからは非同期(要修正)
 	#plain_json_dataを暗号化
-	add_encrypted_json_data = add_encrypt.add_encrypt_json(plain_json_data,add_collection_name)
-	# mul_encrypted_json_data = mul_encrypt_json(plain_json_data,mul_collection_name)
-	# full_encrypted_json_data = full_encrypt.full_encrypt_json(plain_json_data,full_collection_name)
+	# add_encrypted_json_data = add_encrypt.add_encrypt_json(plain_json_data,add_collection_name)
+	full_encrypted_json_data = full_encrypt.full_encrypt_json(plain_json_data,full_collection_name)
 
 	# #mongodbに挿入
 	# mongodb = TestMongo()
@@ -41,18 +39,20 @@ def insert_data(json_name,collection_name):
 
 
 
-	return add_encrypted_json_data
+	return full_encrypted_json_data
 
 # 検索＋計算
 # def caluculate_data(json_name, collection_name):
 # 答えの数字を返す
+
+#　要実装
+# 該当が一つもない場合は例外処理をするべきか
 def caluculate_data(plain_json_data, collection_name):
 	# # jsonファイルの読み出し
 	# json_file = open(json_name,'r')
 	# plain_json_data = json.load(json_file)
 
 	add_collection_name = "add_" + collection_name
-	mul_collection_name = "mul_" + collection_name
 	full_collection_name = "full_" + collection_name
 
 	#jsonから検索して計算必要な該当データのみの配列にする
@@ -60,34 +60,35 @@ def caluculate_data(plain_json_data, collection_name):
 	full_plain_list = plain_json_data
 
 	#計算
-	add_encrypted_sum = add_encrypt.add_caluculate_stdev(add_plain_list, add_collection_name)
-	# full_encrypted_sum = full_encrypt.full_caluculate_sum(full_plain_list, full_collection_name)
+	# add_encrypted_sum = add_encrypt.add_caluculate_stdev(add_plain_list, add_collection_name)
+	full_encrypted_sum = full_encrypt.full_caluculate_average(full_plain_list, full_collection_name)
 
 	#復号
-	add_plain_sum = add_encrypt.add_decrypt_one(add_encrypted_sum, add_collection_name)
+	# add_plain_sum = add_encrypt.add_decrypt_one(add_encrypted_sum, add_collection_name)
+	full_plain_sum = full_encrypt.full_decrypt_one(full_encrypted_sum, full_collection_name)
 
-	return add_plain_sum
+	return full_plain_sum
 
 
 
 
 def main():
 
-	# insert json
-	json_name = sys.argv[1]
-	collection_name = sys.argv[2]
+	# # insert json
+	# json_name = sys.argv[1]
+	# collection_name = sys.argv[2]
 
-	time_sta = time.perf_counter()
-	result = insert_data(json_name,collection_name)
-	with open("./encrypted_text.json", "w") as f:
-		json.dump(result, f, indent = 4)
-	time_end = time.perf_counter()
+	# time_sta = time.perf_counter()
+	# result = insert_data(json_name,collection_name)
+	# with open("./encrypted_text.json", "w") as f:
+	# 	json.dump(result, f, indent = 4)
+	# time_end = time.perf_counter()
 
-	with open("time.json", "w") as f:
-		time_result = {
-			"add_encry_time": time_end - time_sta
-		}
-		json.dump(time_result, f, indent = 4)
+	# with open("time.json", "w") as f:
+	# 	time_result = {
+	# 		"add_encry_time": time_end - time_sta
+	# 	}
+	# 	json.dump(time_result, f, indent = 4)
 		
 
 	# #decrypt json
@@ -100,15 +101,15 @@ def main():
 	# print(result)
 
 
-	# #caluculate json
-	# json_name = sys.argv[1]
-	# collection_name = sys.argv[2]
+	#caluculate json
+	json_name = sys.argv[1]
+	collection_name = sys.argv[2]
 
-	# result1 = insert_data(json_name,collection_name)
-	# time_sta = time.perf_counter()
-	# answer = caluculate_data(result1, collection_name)
-	# time_end = time.perf_counter()	
-	# print(answer)
+	result1 = insert_data(json_name,collection_name)
+	time_sta = time.perf_counter()
+	answer = caluculate_data(result1, collection_name)
+	time_end = time.perf_counter()	
+	print(answer)
 
 
 	
