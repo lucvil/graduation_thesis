@@ -165,7 +165,7 @@ def add_caluculate_average(encrypted_ciphertext_list, collection_name):
 		encrypted_sum += (encrypted_list_item / 1)
 
 
-	encrypted_average = encrypted_sum / 2
+	encrypted_average = encrypted_sum / len(encrypted_ciphertext_list)
 
 
 	return str(encrypted_average.ciphertext()) + " " + str(encrypted_average.exponent)
@@ -179,7 +179,7 @@ def add_caluculate_stdev(encrypted_ciphertext_list, collection_name):
 	public_key, private_key = add_keypair_load_jwk(collection_name)
 
 	decrypted_number_list = [add_only_decrypt_one(x, collection_name) for x in encrypted_ciphertext_list]
-	plain_stdev = statistics.pstdev(decrypted_number_list)
+	plain_stdev = statistics.pvariance(decrypted_number_list)
 	encrypted_stdev = public_key.encrypt(plain_stdev)
 
 	return str(encrypted_stdev.ciphertext()) + " " + str(encrypted_stdev.exponent)

@@ -178,20 +178,6 @@ def full_caluculate_stdev(encrypted_list, collection_name):
 	cipher_pyctxt = [PyCtxt(pyfhel=HE, bytestring=cipher_bytes_item) for cipher_bytes_item in cipher_bytes]
 
 	#計算
-	# encrypted_sum_pyctxt = cipher_pyctxt[0]
-	# encrypted_squares_sum_pyctxt = cipher_pyctxt[0] ** 2
-	# for cipher_pyctxt_item in cipher_pyctxt[1:]:
-	# 	encrypted_sum_pyctxt += cipher_pyctxt_item
-	# 	encrypted_squares_sum_pyctxt += ~(cipher_pyctxt_item**2)
-		
-	# 	~encrypted_sum_pyctxt
-	# 	~encrypted_squares_sum_pyctxt
-	
-	# encrypted_average_pyctxt = encrypted_sum_pyctxt / len(encrypted_list)
-	# ~encrypted_average_pyctxt
-	# encrypted_stdev_pyctxt = ~(~(encrypted_squares_sum_pyctxt / len(encrypted_list)) - ~(encrypted_average_pyctxt ** 2))
-
-	#計算
 	encrypted_sum_pyctxt = cipher_pyctxt[0].copy()
 	for cipher_pyctxt_item in cipher_pyctxt[1:]:
 		encrypted_sum_pyctxt += cipher_pyctxt_item
@@ -202,6 +188,7 @@ def full_caluculate_stdev(encrypted_list, collection_name):
 	for cipher_pyctxt_item in cipher_pyctxt[1:]:
 		encrypted_stdev_pyctxt += (cipher_pyctxt_item - encrypted_average_pyctxt) ** 2
 
+	encrypted_stdev_pyctxt /= len(encrypted_list)
 
 	#答えを16進法文字列に直す
 	encrypted_stdev_bytes = encrypted_stdev_pyctxt.to_bytes()

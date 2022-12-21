@@ -29,8 +29,8 @@ def insert_data(json_name,collection_name):
 
 	#ここからは非同期(要修正)
 	#plain_json_dataを暗号化
-	# add_encrypted_json_data = add_encrypt.add_encrypt_json(plain_json_data,add_collection_name)
-	full_encrypted_json_data = full_encrypt.full_encrypt_json(plain_json_data,full_collection_name)
+	add_encrypted_json_data = add_encrypt.add_encrypt_json(plain_json_data,add_collection_name)
+	# full_encrypted_json_data = full_encrypt.full_encrypt_json(plain_json_data,full_collection_name)
 
 	# #mongodbに挿入
 	# mongodb = TestMongo()
@@ -38,8 +38,9 @@ def insert_data(json_name,collection_name):
 	# del full_encrypted_json_data["_id"]
 
 
-
-	return full_encrypted_json_data
+	return add_encrypted_json_data
+	# return full_encrypted_json_data
+	
 
 # 検索＋計算
 # def caluculate_data(json_name, collection_name):
@@ -60,8 +61,18 @@ def caluculate_data(plain_json_data, collection_name):
 	full_plain_list = plain_json_data
 
 	#計算
+	time_sta = time.perf_counter()
 	# add_encrypted_sum = add_encrypt.add_caluculate_stdev(add_plain_list, add_collection_name)
-	full_encrypted_sum = full_encrypt.full_caluculate_average(full_plain_list, full_collection_name)
+	full_encrypted_sum = full_encrypt.full_caluculate_stdev(full_plain_list, full_collection_name)
+	time_end = time.perf_counter()
+
+	with open("time.json", "w") as f:
+		time_result = {
+			"full_encry_time": time_end - time_sta
+		}
+		json.dump(time_result, f, indent = 4)
+
+
 
 	#復号
 	# add_plain_sum = add_encrypt.add_decrypt_one(add_encrypted_sum, add_collection_name)
@@ -74,21 +85,23 @@ def caluculate_data(plain_json_data, collection_name):
 
 def main():
 
-	# # insert json
-	# json_name = sys.argv[1]
-	# collection_name = sys.argv[2]
+	# insert json
+	json_name = sys.argv[1]
+	collection_name = sys.argv[2]
 
-	# time_sta = time.perf_counter()
-	# result = insert_data(json_name,collection_name)
-	# with open("./encrypted_text.json", "w") as f:
-	# 	json.dump(result, f, indent = 4)
-	# time_end = time.perf_counter()
+	time_sta = time.perf_counter()
+	result = insert_data(json_name,collection_name)
+	time_end = time.perf_counter()
 
-	# with open("time.json", "w") as f:
-	# 	time_result = {
-	# 		"add_encry_time": time_end - time_sta
-	# 	}
-	# 	json.dump(time_result, f, indent = 4)
+	with open("./encrypted_text.json", "w") as f:
+		json.dump(result, f, indent = 4)
+	
+
+	with open("time.json", "w") as f:
+		time_result = {
+			"add_encry_time": time_end - time_sta
+		}
+		json.dump(time_result, f, indent = 4)
 		
 
 	# #decrypt json
@@ -101,15 +114,13 @@ def main():
 	# print(result)
 
 
-	#caluculate json
-	json_name = sys.argv[1]
-	collection_name = sys.argv[2]
+	# #caluculate json
+	# json_name = sys.argv[1]
+	# collection_name = sys.argv[2]
 
-	result1 = insert_data(json_name,collection_name)
-	time_sta = time.perf_counter()
-	answer = caluculate_data(result1, collection_name)
-	time_end = time.perf_counter()	
-	print(answer)
+	# result = insert_data(json_name,collection_name)
+	# answer = caluculate_data(result, collection_name)
+	# print(answer)
 
 
 	
@@ -117,9 +128,24 @@ def main():
 if __name__ == '__main__':
     main()
 
+
+
+#時間の計測
+# time_sta = time.perf_counter()
+#(処理)
+# time_end = time.perf_counter()
+
+# with open("time.json", "w") as f:
+# 	time_result = {
+# 		"add_encry_time": time_end - time_sta
+# 	}
+# 	json.dump(time_result, f, indent = 4)
+
+
+
 #実行 第三引数->plainTextFile 第四引数->データベースの名前
 #計算テスト
 #python db_manipulate.py for_caluculate_plain.json test
 
 #incert テスト
-# python db_manipulate.py new_confirm_copy.json test
+# python db_manipulate.py for_caluculate_plain.json test
