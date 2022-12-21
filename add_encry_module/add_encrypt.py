@@ -84,12 +84,17 @@ def add_keypair_load_jwk(collection_name):
 #add_encrypt simple data
 def add_only_encrypt_one(data,collection_name):
 	public_key, private_key = add_keypair_load_jwk(collection_name)
-	return public_key.encrypt(data)
+
+	encrypted_num = public_key.encrypt(data)
+	return str(encrypted_num.ciphertext()) + " " + str(encrypted_num.exponent)
 
 #add_decrypt simple data
 def add_only_decrypt_one(data, collection_name):
 	public_key, private_key = add_keypair_load_jwk(collection_name)
-	return private_key.decrypt(paillier.EncryptedNumber(public_key,data))
+
+	data_splited = [int(x) for x in data.split()]
+	encrypted_num = paillier.EncryptedNumber(public_key,data_splited[0],data_splited[1])
+	return private_key.decrypt(encrypted_num)
 	
 
 
@@ -99,10 +104,10 @@ def add_encrypt_one(data,collection_name):
 		return data
 	elif type(data) is int:
 		result = add_only_encrypt_one(data, collection_name) 
-		return result.ciphertext()
+		return result
 	elif type(data) is float:
 		result = add_only_encrypt_one(data, collection_name) 
-		return result.ciphertext()
+		return result
 
 #decrypt simple data
 def add_decrypt_one(data,collection_name):
@@ -130,29 +135,40 @@ def add_decrypt_json(encrypted_json, collection_name):
 #caluculate sum from list
 def add_caluculate_sum(encrypted_ciphertext_list, collection_name):
 	public_key, private_key = add_keypair_load_jwk(collection_name)
-	encrypted_list = [paillier.EncryptedNumber(public_key,list_item) for list_item in encrypted_ciphertext_list]
+
+	encrypted_list = []
+	for ciphertext_item in encrypted_ciphertext_list:
+		ciphertext_splited = [int(x) for x in ciphertext_item.split()]
+		encrypted_num_item = paillier.EncryptedNumber(public_key,ciphertext_splited[0],ciphertext_splited[1])
+		encrypted_list.append(encrypted_num_item)
+
+	# encrypted_list = [paillier.EncryptedNumber(public_key,list_item) for list_item in encrypted_ciphertext_list]
 	encrypted_sum = 0
 	for encrypted_list_item in encrypted_list:
 		encrypted_sum += encrypted_list_item
 	
-	return encrypted_sum.ciphertext()
+
+	return str(encrypted_sum.ciphertext()) + " " + str(encrypted_sum.exponent)
 
 
 #caluculate average from list
 def add_caluculate_average(encrypted_ciphertext_list, collection_name):
 	public_key, private_key = add_keypair_load_jwk(collection_name)
-	encrypted_list = [paillier.EncryptedNumber(public_key,list_item) for list_item in encrypted_ciphertext_list]
+	
+	encrypted_list = []
+	for ciphertext_item in encrypted_ciphertext_list:
+		ciphertext_splited = [int(x) for x in ciphertext_item.split()]
+		encrypted_num_item = paillier.EncryptedNumber(public_key,ciphertext_splited[0],ciphertext_splited[1])
+		encrypted_list.append(encrypted_num_item)
 	encrypted_sum = 0
 	for encrypted_list_item in encrypted_list:
 		encrypted_sum += (encrypted_list_item / 1)
 
 
 	encrypted_average = encrypted_sum / 2
-	print(encrypted_sum)
-	print(encrypted_average)
 
 
-	return encrypted_sum.ciphertext()
+	return str(encrypted_average.ciphertext()) + " " + str(encrypted_average.exponent)
 
 
 #caluculate stdev(標準偏差) from list
@@ -161,11 +177,12 @@ def add_caluculate_stdev(encrypted_ciphertext_list, collection_name):
 	#標準偏差を求めるため一回復号する
 	#この時本来であればユーザーとの通信が入るためダミー時間のsleepを設けること
 	public_key, private_key = add_keypair_load_jwk(collection_name)
-	decrypted_number_list = [private_key.decrypt(paillier.EncryptedNumber(public_key,x)) for x in encrypted_ciphertext_list]
+
+	decrypted_number_list = [add_only_decrypt_one(x, collection_name) for x in encrypted_ciphertext_list]
 	plain_stdev = statistics.pstdev(decrypted_number_list)
 	encrypted_stdev = public_key.encrypt(plain_stdev)
 
-	return encrypted_stdev.ciphertext()
+	return str(encrypted_stdev.ciphertext()) + " " + str(encrypted_stdev.exponent)
 
 
 
