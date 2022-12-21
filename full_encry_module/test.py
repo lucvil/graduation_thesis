@@ -50,8 +50,8 @@ HE_f.from_bytes_relin_key(bytes.fromhex(read_data["a"]["relin_key"]))
 
 
 #int型の暗号化・復号
-integer1 = np.array([127.0], dtype=np.float64)
-integer2 = np.array([-2.0], dtype=np.float64)
+integer1 = np.array([7.0], dtype=np.float64)
+integer2 = np.array([-2.1], dtype=np.float64)
 print(integer1)
 ctxt1 = HE_f.encryptFrac(integer1) # Encryption makes use of the public key
 ctxt2 = HE_f.encryptFrac(integer2) # For integers, encryptInt function is used.
@@ -67,13 +67,41 @@ c_b_str = c_b.hex()
 # # 0xを抜く
 # c_b_str_dec = hex(c_b_int)[2:]
 
-c_b_dec = bytes.fromhex(c_b_str_dec)
+c_b_dec = bytes.fromhex(c_b_str)
 if c_b == c_b_dec:
 	print("complete")
 
 new_ctxt1 = PyCtxt(pyfhel=HE_f, bytestring=c_b_dec)
 
-dtxt1 = HE_f.decryptFrac(new_ctxt1)
-dtxt2 = HE_f.decryptFrac(ctxt2)
-print(dtxt1[0],dtxt2[0])
+ctxt_x = new_ctxt1
+ctxt_y = ctxt2
+ctxt_x *= ctxt_x
+ctxt_y *= ctxt_y
+
+_r = lambda x: np.round(x, decimals=6)[:4]
+ctxt_a = 0 + ctxt_x
+print(f"res {_r(HE.decryptFrac(ctxt_x))} ")
+#n multiple test
+# n_mults = 10
+# _r = lambda x: np.round(x, decimals=6)[:4]
+# print(f"B3. Securely multiplying {n_mults} times!")
+# for step in range(1,n_mults+1):
+#     ctxt_x += ctxt_y   # Multiply in-place --> implicit align_mod_n_scale()
+#     ~ctxt_x  # Always relinearize after each multiplication!
+#     # ~ctxt_y
+#     print(ctxt_x)
+#     # print(f"\tStep {step}:  res {_r(HE.decryptFrac(ctxt_x))} ")
+# try:
+#     # ~ctxt_x  # Always relinearize after each multiplication!
+#     # ~ctxt_y	
+#     ctxt_x += ctxt_y
+# except ValueError as e:
+#     assert str(e)=='scale out of bounds'
+#     print(f"If we multiply further we get: {str(e)}")
+# print(f"\tStep {step}:  res {_r(HE.decryptFrac(ctxt_x))} ")
+print("---------------------------------------")
+
+# dtxt1 = HE_f.decryptFrac(new_ctxt1)
+# dtxt2 = HE_f.decryptFrac(ctxt2)
+# print(dtxt1[0],dtxt2[0])
 

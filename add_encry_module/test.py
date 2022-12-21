@@ -30,16 +30,36 @@ public_key, private_key = paillier.generate_paillier_keypair()
 #暗号文を数値化しない
 # time_sta = time.perf_counter()
 
-E1 = (public_key.encrypt(-4))
-E2 = (public_key.encrypt(8))
-E3 = (public_key.encrypt(10000000000000000000000000))
 
-EA = 0
-EA = E3 * -4
+
+
+E1 = public_key.encrypt(4.0 / 3)
+E1_cipher = str(E1.ciphertext()) + " " + str(E1.exponent)
+E1_cipher_list = [int(x) for x in E1_cipher.split()]
+new_E1 = paillier.EncryptedNumber(public_key,E1_cipher_list[0],E1_cipher_list[1])
+print(private_key.decrypt(new_E1))
+
+# Ed = public_key.encrypt(4.0)
+# E1 = paillier.EncryptedNumber(public_key,Ed.ciphertext(),Ed.exponent)
+# print(private_key.decrypt(E1))
+# E2 = paillier.EncryptedNumber(public_key,(public_key.encrypt(6)).ciphertext())
+# E3 = (public_key.encrypt(100))
+# E_list = [E1,E2,E3]
+
+# EA = 0
+# EA += E1
+# EA += E2
+# # for i in E_list:
+# #     EA += i
+# EA =  EA / 2
  
 
-DA = private_key.decrypt(EA)
+# DA = private_key.decrypt(EA)
+# EA_dammy = paillier.EncryptedNumber(public_key,EA.ciphertext())
+# if EA == EA_dammy:
+#     print("complete")
+# DA = private_key.decrypt(paillier.EncryptedNumber(public_key,EA.ciphertext()))
 
 
 # time_end = time.perf_counter()
-print(DA)
+# print(DA)

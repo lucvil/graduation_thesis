@@ -128,36 +128,44 @@ def add_decrypt_json(encrypted_json, collection_name):
 
 #caluculate系はまだテストしていない
 #caluculate sum from list
-def add_caluculate_sum(encrypted_list, collection_name):
+def add_caluculate_sum(encrypted_ciphertext_list, collection_name):
+	public_key, private_key = add_keypair_load_jwk(collection_name)
+	encrypted_list = [paillier.EncryptedNumber(public_key,list_item) for list_item in encrypted_ciphertext_list]
 	encrypted_sum = 0
-	for i in range(len(encrypted_list)):
-		encrypted_sum += encrypted_list[i]
+	for encrypted_list_item in encrypted_list:
+		encrypted_sum += encrypted_list_item
 	
-	return encrypted_sum
+	return encrypted_sum.ciphertext()
 
 
 #caluculate average from list
-def add_caluculate_average(encrypted_list, collection_name):
+def add_caluculate_average(encrypted_ciphertext_list, collection_name):
+	public_key, private_key = add_keypair_load_jwk(collection_name)
+	encrypted_list = [paillier.EncryptedNumber(public_key,list_item) for list_item in encrypted_ciphertext_list]
 	encrypted_sum = 0
-	for i in range(len(encrypted_list)):
-		encrypted_sum += encrypted_list[i]
-	
-	encrypted_average = encrypted_sum / len(encrypted_list)
+	for encrypted_list_item in encrypted_list:
+		encrypted_sum += (encrypted_list_item / 1)
 
-	return encrypted_average
+
+	encrypted_average = encrypted_sum / 2
+	print(encrypted_sum)
+	print(encrypted_average)
+
+
+	return encrypted_sum.ciphertext()
 
 
 #caluculate stdev(標準偏差) from list
 #全てのデータを復号して計算し暗号化し直す
-def add_caluculate_stdev(encrypted_list, collection_name):
+def add_caluculate_stdev(encrypted_ciphertext_list, collection_name):
 	#標準偏差を求めるため一回復号する
 	#この時本来であればユーザーとの通信が入るためダミー時間のsleepを設けること
 	public_key, private_key = add_keypair_load_jwk(collection_name)
-	decrypted_number_list = [private_key.decrypt(x) for x in encrypted_list]
+	decrypted_number_list = [private_key.decrypt(paillier.EncryptedNumber(public_key,x)) for x in encrypted_ciphertext_list]
 	plain_stdev = statistics.pstdev(decrypted_number_list)
 	encrypted_stdev = public_key.encrypt(plain_stdev)
 
-	return encrypted_stdev
+	return encrypted_stdev.ciphertext()
 
 
 

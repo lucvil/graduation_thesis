@@ -114,3 +114,78 @@ def full_encrypt_json(plain_json,collection_name):
 def full_decrypt_json(encrypted_json, collection_name):
 	result = json_mun.func_json_data(full_decrypt_one, encrypted_json, collection_name)
 	return result
+
+
+#caluculate sum from list
+#今の所実装していないが計算しすぎるとError:scale out of boundsするので、
+# 本当はtry文でエラー検知し復号->暗号化し直す必要がある
+# 掛け算を8回ぐらいするとアウト、足し算は基本的には問題ない
+def full_caluculate_sum(encrypted_list, collection_name):
+	# 十六進法文字列の配列をPyCtxt型の配列に直す
+	HE = full_keypair_load(collection_name)
+	cipher_bytes = [bytes.fromhex(encry_str16_item) for encry_str16_item in encrypted_list]
+	cipher_pyctxt = [PyCtxt(pyfhel=HE, bytestring=cipher_bytes_item) for cipher_bytes_item in cipher_bytes]
+
+	#計算
+	encrypted_sum_pyctxt = 0
+	for cipher_pyctxt_item in cipher_pyctxt:
+		encrypted_sum_pyctxt += cipher_pyctxt_item
+		~encrypted_sum_pyctxt
+	
+	#答えを16進法文字列に直す
+	encrypted_sum_bytes = encrypted_sum_pyctxt.to_bytes()
+	encrypted_sum_str16 = encrypted_sum_bytes.hex()
+
+	return encrypted_sum_str16
+	
+
+#caluculate average from list
+def full_caluculate_average(encrypted_list, collection_name):
+	# 十六進法文字列の配列をPyCtxt型の配列に直す
+	HE = full_keypair_load(collection_name)
+	cipher_bytes = [bytes.fromhex(encry_str16_item) for encry_str16_item in encrypted_list]
+	cipher_pyctxt = [PyCtxt(pyfhel=HE, bytestring=cipher_bytes_item) for cipher_bytes_item in cipher_bytes]
+
+	#計算
+	encrypted_sum_pyctxt = 0
+	for cipher_pyctxt_item in cipher_pyctxt:
+		encrypted_sum_pyctxt += cipher_pyctxt_item
+		~encrypted_sum_pyctxt
+	encrypted_average_pyctxt = encrypted_sum_pyctxt / len(encrypted_list)
+	~encrypted_average_pyctxt
+
+	#答えを16進法文字列に直す
+	encrypted_average_bytes = encrypted_average_pyctxt.to_bytes()
+	encrypted_average_str16 = encrypted_average_bytes.hex()
+
+	return encrypted_average_str16
+
+#caluculate stdev
+def full_caluculate_stdev(encrypted_list, collection_name):
+	# 十六進法文字列の配列をPyCtxt型の配列に直す
+	HE = full_keypair_load(collection_name)
+	cipher_bytes = [bytes.fromhex(encry_str16_item) for encry_str16_item in encrypted_list]
+	cipher_pyctxt = [PyCtxt(pyfhel=HE, bytestring=cipher_bytes_item) for cipher_bytes_item in cipher_bytes]
+
+	#計算
+	encrypted_sum_pyctxt = 0
+	encrypted_squares_sum_pyctxt = 0
+	for cipher_pyctxt_item in cipher_pyctxt:
+		encrypted_sum_pyctxt += cipher_pyctxt_item
+		encrypted_squares_sum_pyctxt += ~(cipher_pyctxt_item ** 2)
+		~encrypted_sum_pyctxt
+		~encrypted_squares_sum_pyctxt
+	
+	encrypted_average_pyctxt = encrypted_sum_pyctxt / len(encrypted_list)
+	~encrypted_average_pyctxt
+	encrypted_stdev_pyctxt = ~(~(encrypted_squares_sum_pyctxt / len(encrypted_list)) - ~(encrypted_average_pyctxt ** 2))
+
+	
+	#答えを16進法文字列に直す
+	encrypted_stdev_bytes = encrypted_stdev_pyctxt.to_bytes()
+	encrypted_stdev_str16 = encrypted_stdev_bytes.hex()
+
+	return encrypted_stdev_str16
+
+
+#caluculate 
