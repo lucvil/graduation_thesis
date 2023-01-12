@@ -87,7 +87,7 @@ def caluculate_data(plain_json_data, collection_name):
 
 
 # 全てを加法準同型暗号で計算
-def caluculate_add_encry(calc_index_list, method, collection_name):
+def calc_change_add_encry(calc_index_list, method, collection_name):
 	add_collection_name = "add_" + collection_name
 
 	# jsonファイルの読み出し
@@ -115,7 +115,7 @@ def caluculate_add_encry(calc_index_list, method, collection_name):
 
 
 # 全てを完全準同型暗号で計算
-def caluculate_full_encry(calc_index_list, method, collection_name):
+def calc_change_full_encry(calc_index_list, method, collection_name):
 	full_collection_name = "full_" + collection_name
 
 	# jsonファイルの読み出し
@@ -174,7 +174,24 @@ def caluculate_both_encry(calc_index_list, method, collection_name):
 
 
 def parrallel_distribute_order_do(order_list):
-	pass
+
+	#命令振り分け
+	add_order_list = []
+	full_order_list = []
+	for order_item in order_list:
+		if order_item[1] == "sum" or order_item[1] == "average":
+			add_order_list.append(order_item)
+		elif order_item[1] == "stdev":
+			full_order_list.append(order_item)
+		elif order_item[1] == "add" or order_item[1] == "delete":
+			add_order_list.append(order_item)
+			full_order_list.append(order_item)
+	
+	# add と fullで並列処理
+	#async, threadingm, multiprocessing の三種類があるが、今回は並列処理のmultiprocessingを用いる
+	
+	
+
 
 
 
