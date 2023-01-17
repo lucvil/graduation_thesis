@@ -8,7 +8,7 @@ import random
 import numpy as np
 
 #並列処理
-from multiprocessing import Process
+from multiprocessing import Process, Value
 import multiprocessing
 import threading
 
@@ -239,16 +239,16 @@ def caluculate_both_encry(calc_index_list, method, collection_name):
 
 
 # order_listに従って上記の三つにデータを流す
-def do_order_list(calc_func, order_list, multiprocess_result_list):
+def do_order_list_add_or_full(calc_func, order_list, multiprocess_result_list):
 	for order_list_item in order_list:
 		answer_item = calc_func(order_list_item[0], order_list_item[1], order_list_item[2])
-		multiprocess_result_list.append([answer_item, order_list[3]])
+		multiprocess_result_list.append([answer_item, order_list_item[3]])
 	
 	return 1
 
 
 # 命令を加法と完全に振り分け並列処理する
-def parrallel_distribute_order_do(order_list):
+def parallel_distribute_order_do_add_full(order_list):
 
 	#命令振り分け
 	add_order_list = []
@@ -266,7 +266,7 @@ def parrallel_distribute_order_do(order_list):
 	#async, threadingm, multiprocessing の三種類があるが、今回は並列処理のmultiprocessingを用いる
 	manager = multiprocessing.Manager()
 	multiprocess_result_list = manager.list()
-	add_process = Process(target=do_order_list, args=(calc_change_add_encry, add_order_list,multiprocess_result_list,))
+	add_process = Process(target=do_order_list_add_or_full, args=(calc_change_add_encry, add_order_list,multiprocess_result_list,))
 	# full_process = Process(target=do_order_list, args=(calc_change_full_encry, full_order_list,multiprocess_result_list,))
 	add_process.start()
 	# full_process.start()
@@ -275,7 +275,42 @@ def parrallel_distribute_order_do(order_list):
 
 	print(multiprocess_result_list)
 
-# def pararrel_distribute_only_full(order_list):
+
+
+#order_listに従って上記の完全準同型にデータを流す
+def do_order_list_full_onky(calc_func, order_list, multiprocess_result_list, multiprocess_change_stage):
+	for order_list_item in order_list:
+		# 要追加実装
+		answer_item = calc_func(order_list_item[0], order_list_item[1], order_list_item[2])
+		multiprocess_result_list.append([answer_item, order_list_item[3]])
+
+	return 1	
+
+
+#　並列処理＋完全準同型のみ
+def parallel_distribute_order_do_full_only(order_list):
+
+	#命令振り分け
+	full_order_list_1 = []
+	full_order_list_2 = []
+	for item_num in range(len(order_list)):
+		if item_num % 2 == 0:
+			full_order_list_1.append(order_list[item_num])
+		else:
+			full_order_list_2.append(order_list[item_num])
+
+	print(order_list)
+
+	# #fullのみで
+	manager = multiprocessing.Manager()
+	multiprocess_result_list = manager.list()
+	if order_list[0][1] == "add" or order_list[0][1] == "delete":
+		change_stage = Value("d", 0.6)
+	else:
+		change_stage = Value("d", 0)
+	full_process_1 = Process(target=do_order_list_add_or_full, args=(calc_change_add_encry, full_order_list_1,multiprocess_result_list, change_stage,))
+	# 続き
+
 
 
 
@@ -283,14 +318,14 @@ def parrallel_distribute_order_do(order_list):
 def make_calc_order(order_num, first_list_long, collection_name):
 	order_list = []
 	db_list_long = first_list_long
-
+	change_stage = 0
 	# 命令生成
 	for i in range(order_num):
 		calc_long = random.randint(1,db_list_long)
 		calc_index_list = random.sample(range(db_list_long), k=calc_long)
 		calc_kind = np.random.choice(["sum", "average", "stdev"], p=[0.33, 0.33, 0.34])
 
-		order_item = [calc_index_list, calc_kind, collection_name, i]
+		order_item = [calc_index_list, calc_kind, collection_name, i, change_stage]
 		order_list.append(order_item)
 
 	return order_list
@@ -300,6 +335,7 @@ def make_calc_order(order_num, first_list_long, collection_name):
 def make_calc_change_order(order_num, first_list_long, collection_name):
 	order_list = []
 	db_list_long = first_list_long
+	change_stage = 0
 
 	#命令生成
 	for i in range(order_num):
@@ -310,26 +346,38 @@ def make_calc_change_order(order_num, first_list_long, collection_name):
 			# データ計算
 			calc_long = random.randint(1,db_list_long)
 			calc_index_list = random.sample(range(db_list_long), k=calc_long)
-			order_item = [calc_index_list, calc_kind, collection_name, i]
+			order_item = [calc_index_list, calc_kind, collection_name, i, change_stage]
 			order_list.append(order_item)
 		elif calc_kind == "add":
 			# データ追加
 			add_long = random.randint(1, 10)
 			# float型の要素を持つlistに直す
 			add_plain_list =  [randomfloat(3) for i in range(add_long)]
-			order_item = [add_plain_list, calc_kind, collection_name, i]
+			change_stage += 1
+			order_item = [add_plain_list, calc_kind, collection_name, i, change_stage]
+			if len(order_list) >= 2:
+				order_list[-2][4] += 0.6
 			db_list_long += add_long
 			order_list.append(order_item)
 		elif calc_kind == "delete":
 			#データ削除
 			delete_long = random.randint(1,10)
 			delete_index_list = random.sample(range(db_list_long), k=delete_long)
-			order_item = [delete_index_list, calc_kind, collection_name, i]
+			change_stage += 1
+			order_item = [delete_index_list, calc_kind, collection_name, i, change_stage]
+			if len(order_list) >= 2:
+				order_list[-2][4] += 0.6
 			db_list_long -= delete_long
-			order_list.append(order_item)		
+			order_list.append(order_item)
+
 			
 	print(order_list)
 	return order_list
+
+
+# order[計算list or 追加リスト、　操作内容、　collection_name、　命令番号、　変更ステージ]
+
+#change_stageのバグ修正すること
 		
 
 
@@ -382,8 +430,8 @@ def main():
 	#複数計算only
 	json_name = sys.argv[1]
 	collection_name = sys.argv[2]
-	order_list = make_calc_order(100,100, collection_name)
-	parrallel_distribute_order_do(order_list)
+	order_list = make_calc_change_order(100,100, collection_name)
+	parallel_distribute_order_do_full_only(order_list)
 	
 
 
