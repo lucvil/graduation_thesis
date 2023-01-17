@@ -242,7 +242,7 @@ def caluculate_both_encry(calc_index_list, method, collection_name):
 def do_order_list(calc_func, order_list, multiprocess_result_list):
 	for order_list_item in order_list:
 		answer_item = calc_func(order_list_item[0], order_list_item[1], order_list_item[2])
-		multiprocess_result_list.append(answer_item)
+		multiprocess_result_list.append([answer_item, order_list[3]])
 	
 	return 1
 
@@ -275,6 +275,9 @@ def parrallel_distribute_order_do(order_list):
 
 	print(multiprocess_result_list)
 
+# def pararrel_distribute_only_full(order_list):
+
+
 
 # 計算命令のみをランダム生成する
 def make_calc_order(order_num, first_list_long, collection_name):
@@ -289,9 +292,6 @@ def make_calc_order(order_num, first_list_long, collection_name):
 
 		order_item = [calc_index_list, calc_kind, collection_name, i]
 		order_list.append(order_item)
-
-		# # 計算の方式は以下の関数を変える
-		# calc_answer = caluculate_add_encry(calc_index_list, calc_kind, collection_name)
 
 	return order_list
 
