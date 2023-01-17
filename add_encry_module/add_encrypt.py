@@ -100,6 +100,7 @@ def add_only_decrypt_one(data, collection_name):
 
 #encrypt simple data
 def add_encrypt_one(data,collection_name):
+	
 	if type(data) is str:
 		return data
 	elif type(data) is int:

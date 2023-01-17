@@ -7,6 +7,11 @@ from pymongo import MongoClient
 import random
 import numpy as np
 
+#並列処理
+from multiprocessing import Process
+import multiprocessing
+import threading
+
 class TestMongo(object):
 
 	def __init__(self):
@@ -20,7 +25,12 @@ class TestMongo(object):
 
 
 def randomfloat(n):
-	return random.uniform(0, 10**n)
+	#小数点代何位までにするか
+	answer_decimals = 2
+	answer = random.uniform(0, 10**n)
+	#小数点第2位以下で四捨五入
+	answer = float(np.round(answer, decimals=answer_decimals))
+	return answer
 
 #jsonデータとコレクション名を受け取りMongoDBにデータを挿入する
 def insert_data(json_name,collection_name):
@@ -28,9 +38,12 @@ def insert_data(json_name,collection_name):
     # jsonファイルの読み出し
 	json_file = open(json_name,'r')
 	plain_json_data = json.load(json_file)
+	print(type(plain_json_data[0]))
 
 	add_collection_name = "add_" + collection_name
 	full_collection_name = "full_" + collection_name
+
+	print(add_collection_name)
 
 	#ここからは非同期(要修正)
 	#plain_json_dataを暗号化
@@ -45,7 +58,7 @@ def insert_data(json_name,collection_name):
 
 	return add_encrypted_json_data
 	# return full_encrypted_json_data
-	
+
 
 # 検索＋計算
 # def caluculate_data(json_name, collection_name):
@@ -89,13 +102,15 @@ def caluculate_data(plain_json_data, collection_name):
 # 全てを加法準同型暗号で計算
 def calc_change_add_encry(calc_index_list, method, collection_name):
 	add_collection_name = "add_" + collection_name
+	db_file_place = "./encrypted_data/add_encrypted_data.json"
 
 	# jsonファイルの読み出し
-	json_file = open("./encrypted_data/add_encrypted_data.json",'r')
+	json_file = open(db_file_place,'r')
 	add_encrypted_json_data = json.load(json_file)
 
 	#　今回はadd_encrypted_json_dataにリストが来るとして考える(実際はjson typeで来てその中から該当部分を検索しリスト化する工程が加わる)
-	add_encrypted_calc_list = [add_encrypted_json_data[i] for i in calc_index_list]
+	if method != "add" and method != "delete":
+		add_encrypted_calc_list = [add_encrypted_json_data[i] for i in calc_index_list]
 
 
 	# 計算
@@ -105,11 +120,23 @@ def calc_change_add_encry(calc_index_list, method, collection_name):
 		add_encrypted_answer = add_encrypt.add_caluculate_average(add_encrypted_calc_list, add_collection_name)
 	elif method == "stdev":
 		add_encrypted_answer = add_encrypt.add_caluculate_stdev(add_encrypted_calc_list,add_collection_name)
+	elif method == "add":
+		add_encrypted_json_data.extend(add_encrypt.add_encrypt_json(calc_index_list, add_collection_name))
+		with open(db_file_place, "w") as f:
+			json.dump(add_encrypted_json_data, f, indent = 4)
+	elif method == "delete":
+		add_encrypted_deleted_json_data = [add_encrypted_json_data[i] for i in range(len(add_encrypted_json_data)) if i not in calc_index_list]
+
+		with open(db_file_place, "w") as f:
+			json.dump(add_encrypted_deleted_json_data, f, indent = 4)		
 	else:
 		print("error")
 
 	# 実際はdecryptはuser側でやるべきだが、簡単のためここで行う
-	add_plain_answer = add_encrypt.add_decrypt_one(add_encrypted_answer, add_collection_name)
+	add_plain_answer = -1
+	if method != "add" and method != "delete":
+		add_plain_answer = add_encrypt.add_decrypt_one(add_encrypted_answer, add_collection_name)
+
 
 	return add_plain_answer
 
@@ -117,9 +144,10 @@ def calc_change_add_encry(calc_index_list, method, collection_name):
 # 全てを完全準同型暗号で計算
 def calc_change_full_encry(calc_index_list, method, collection_name):
 	full_collection_name = "full_" + collection_name
+	db_file_place = "./encrypted_data/full_encrypted_data.json"
 
 	# jsonファイルの読み出し
-	json_file = open("./encrypted_data/full_encrypted_data.json",'r')
+	json_file = open(db_file_place,'r')
 	full_encrypted_json_data = json.load(json_file)
 
 	#　今回はfull_encrypted_json_dataにリストが来るとして考える(実際はjson typeで来てその中から該当部分を検索しリスト化する工程が加わる)
@@ -133,14 +161,23 @@ def calc_change_full_encry(calc_index_list, method, collection_name):
 		full_encrypted_answer = full_encrypt.full_caluculate_average(full_encrypted_calc_list, full_collection_name)
 	elif method == "stdev":
 		full_encrypted_answer = full_encrypt.full_caluculate_stdev(full_encrypted_calc_list,full_collection_name)
+	elif method == "add":
+		full_encrypted_json_data.extend(full_encrypt.full_encrypt_json(calc_index_list, full_collection_name))
+		with open(db_file_place, "w") as f:
+			json.dump(full_encrypted_json_data, f, indent = 4)
+	elif method == "delete":
+		full_encrypted_deleted_json_data = [full_encrypted_json_data[i] for i in range(len(full_encrypted_json_data)) if i not in calc_index_list]
+		with open(db_file_place, "w") as f:
+			json.dump(full_encrypted_deleted_json_data, f, indent = 4)			
 	else:
 		pass
 
 	# 実際はdecryptはuser側でやるべきだが、簡単のためここで行う
-	full_plain_answer = full_encrypt.full_decrypt_one(full_encrypted_answer, full_collection_name)
+	full_plain_answer = -1
+	if method != "add" and method != "delete":
+		full_plain_answer = full_encrypt.full_decrypt_one(full_encrypted_answer, full_collection_name)
 
 	return full_plain_answer
-
 
 
 # 加法・完全準同型暗号の両方を用いて計算
@@ -148,31 +185,69 @@ def calc_change_full_encry(calc_index_list, method, collection_name):
 def caluculate_both_encry(calc_index_list, method, collection_name):
 	add_collection_name = "add_" + collection_name
 	full_collection_name = "full_" + collection_name
+	add_db_file_place = "./encrypted_data/add_encrypted_data.json"
+	full_db_file_place = "./encrypted_data/full_encrypted_data.json"
 
 	#　計算
 	if method == "sum":
-		json_file = open("./encrypted_data/add_encrypted_data.json",'r')
+		json_file = open(add_db_file_place,'r')
 		add_encrypted_json_data = json.load(json_file)
 		add_encrypted_calc_list = [add_encrypted_json_data[i] for i in calc_index_list]
 		encrypted_answer = add_encrypt.add_caluculate_sum(add_encrypted_calc_list,add_collection_name)
 		plain_answer = add_encrypt.add_decrypt_one(encrypted_answer, add_collection_name)
 	elif method == "average":
-		json_file = open("./encrypted_data/add_encrypted_data.json",'r')
+		json_file = open(add_db_file_place,'r')
 		add_encrypted_json_data = json.load(json_file)
 		add_encrypted_calc_list = [add_encrypted_json_data[i] for i in calc_index_list]
 		encrypted_answer = add_encrypt.add_caluculate_average(add_encrypted_calc_list,add_collection_name)
 		plain_answer = add_encrypt.add_decrypt_one(encrypted_answer, add_collection_name)
 	elif method == "stdev":
-		json_file = open("./encrypted_data/full_encrypted_data.json",'r')
+		json_file = open(full_db_file_place,'r')
 		full_encrypted_json_data = json.load(json_file)
 		full_encrypted_calc_list = [full_encrypted_json_data[i] for i in calc_index_list]
 		encrypted_answer = full_encrypt.full_caluculate_stdev(full_encrypted_calc_list,full_collection_name)
 		plain_answer = full_encrypt.full_decrypt_one(encrypted_answer, add_collection_name)
+	elif method == "add":
+		add_json_file = open(add_db_file_place,'r')
+		add_encrypted_json_data = json.load(add_json_file)
+		add_encrypted_json_data.extend(add_encrypt.add_encrypt_json(calc_index_list, add_collection_name))
+		with open(add_db_file_place, "w") as f:
+			json.dump(full_encrypted_json_data, f, indent = 4)
+
+		full_json_file = open(full_db_file_place,'r')
+		full_encrypted_json_data = json.load(full_json_file)
+		full_encrypted_json_data.extend(full_encrypt.full_encrypt_json(calc_index_list, full_collection_name))
+		with open(full_db_file_place, "w") as f:
+			json.dump(full_encrypted_json_data, f, indent = 4)
+		plain_answer = -1
+	elif method == "delete":
+		add_json_file = open(add_db_file_place,'r')
+		add_encrypted_json_data = json.load(add_json_file)
+		add_encrypted_deleted_json_data = [add_encrypted_json_data[i] for i in range(len(add_encrypted_json_data)) if i not in calc_index_list]
+		with open(add_db_file_place, "w") as f:
+			json.dump(add_encrypted_deleted_json_data, f, indent = 4)
+
+		full_json_file = open(full_db_file_place,'r')
+		full_encrypted_json_data = json.load(full_json_file)
+		full_encrypted_deleted_json_data = [full_encrypted_json_data[i] for i in range(len(full_encrypted_json_data)) if i not in calc_index_list]
+		with open(full_db_file_place, "w") as f:
+			json.dump(full_encrypted_deleted_json_data, f, indent = 4)	
+		plain_answer = -1			
+	
 
 	return plain_answer
 
 
+# order_listに従って上記の三つにデータを流す
+def do_order_list(calc_func, order_list, multiprocess_result_list):
+	for order_list_item in order_list:
+		answer_item = calc_func(order_list_item[0], order_list_item[1], order_list_item[2])
+		multiprocess_result_list.append(answer_item)
+	
+	return 1
 
+
+# 命令を加法と完全に振り分け並列処理する
 def parrallel_distribute_order_do(order_list):
 
 	#命令振り分け
@@ -189,11 +264,16 @@ def parrallel_distribute_order_do(order_list):
 	
 	# add と fullで並列処理
 	#async, threadingm, multiprocessing の三種類があるが、今回は並列処理のmultiprocessingを用いる
-	
-	
+	manager = multiprocessing.Manager()
+	multiprocess_result_list = manager.list()
+	add_process = Process(target=do_order_list, args=(calc_change_add_encry, add_order_list,multiprocess_result_list,))
+	# full_process = Process(target=do_order_list, args=(calc_change_full_encry, full_order_list,multiprocess_result_list,))
+	add_process.start()
+	# full_process.start()
+	add_process.join()
+	# full_process.join()
 
-
-
+	print(multiprocess_result_list)
 
 
 # 計算命令のみをランダム生成する
@@ -205,15 +285,9 @@ def make_calc_order(order_num, first_list_long, collection_name):
 	for i in range(order_num):
 		calc_long = random.randint(1,db_list_long)
 		calc_index_list = random.sample(range(db_list_long), k=calc_long)
-		calc_kind_seed = random.randint(0,2)
-		if calc_kind_seed == 0:
-			calc_kind = "sum"
-		elif calc_kind_seed == 1:
-			calc_kind = "average"
-		elif calc_kind_seed == 2:
-			calc_kind = "stdev"
+		calc_kind = np.random.choice(["sum", "average", "stdev"], p=[0.33, 0.33, 0.34])
 
-		order_item = [calc_index_list, calc_kind, collection_name]
+		order_item = [calc_index_list, calc_kind, collection_name, i]
 		order_list.append(order_item)
 
 		# # 計算の方式は以下の関数を変える
@@ -221,6 +295,8 @@ def make_calc_order(order_num, first_list_long, collection_name):
 
 	return order_list
 
+
+# 計算命令とデータの作成・削除命令をランダム生成する
 def make_calc_change_order(order_num, first_list_long, collection_name):
 	order_list = []
 	db_list_long = first_list_long
@@ -228,35 +304,27 @@ def make_calc_change_order(order_num, first_list_long, collection_name):
 	#命令生成
 	for i in range(order_num):
 		calc_kind_seed = random.randint(0,4)
-		if calc_kind_seed == 0:
-			calc_kind = "sum"
-		elif calc_kind_seed == 1:
-			calc_kind = "average"
-		elif calc_kind_seed == 2:
-			calc_kind = "stdev"
-		elif calc_kind_seed == 3:
-			calc_kind = "add"
-		elif calc_kind_seed == 4:
-			calc_kind = "delete"
+		calc_kind = np.random.choice(["sum", "average", "stdev", "add", "delete"], p=[0.2, 0.2, 0.2, 0.2, 0.2])
 		
-		if calc_kind_seed <= 2:
+		if calc_kind == "sum" or calc_kind == "average" or calc_kind == "stdev":
 			# データ計算
 			calc_long = random.randint(1,db_list_long)
 			calc_index_list = random.sample(range(db_list_long), k=calc_long)
-			order_item = [calc_index_list, calc_kind, collection_name]
+			order_item = [calc_index_list, calc_kind, collection_name, i]
 			order_list.append(order_item)
 		elif calc_kind == "add":
 			# データ追加
 			add_long = random.randint(1, 10)
-			add_plain_list =  [np.round(randomfloat(3), decimals=2) for i in range(add_long)]
-			order_item = [add_plain_list, calc_kind, collection_name]
+			# float型の要素を持つlistに直す
+			add_plain_list =  [randomfloat(3) for i in range(add_long)]
+			order_item = [add_plain_list, calc_kind, collection_name, i]
 			db_list_long += add_long
 			order_list.append(order_item)
 		elif calc_kind == "delete":
 			#データ削除
 			delete_long = random.randint(1,10)
-			delete_index_list = random.sample(range(db_list_long), k=calc_long)
-			order_item = [delete_index_list, calc_kind, collection_name]
+			delete_index_list = random.sample(range(db_list_long), k=delete_long)
+			order_item = [delete_index_list, calc_kind, collection_name, i]
 			db_list_long -= delete_long
 			order_list.append(order_item)		
 			
@@ -314,15 +382,13 @@ def main():
 	#複数計算only
 	json_name = sys.argv[1]
 	collection_name = sys.argv[2]
-	make_caluculate_order(100, 100, collection_name)
+	order_list = make_calc_order(100,100, collection_name)
+	parrallel_distribute_order_do(order_list)
+	
 
 
 	#計算+追加・削除
 
-
-
-
-	
 
 if __name__ == '__main__':
     main()
