@@ -429,16 +429,16 @@ def make_calc_change_order(order_num, first_list_long, collection_name):
 
 
 # 暗号化テスト
-def encry_test():
+def encry_test(encrypt_method):
 	record = {}
-	record["title"] = "add_encryption"
+	record["title"] = encrypt_method + "_encryption"
 
 	##record_josn_nameを毎回変えること
-	record_json_name = "./record/encry/add_encry/add_encry_record.json"
+	record_json_name = "./record/encry/" + encrypt_method + "_encry/" + encrypt_method + "_encry_record.json"
 
 	encrypt_method = "add"
 	plain_json_folder = ["3.2", "5.2", "7.2", "9.2"]
-	plain_json_count = ["10", "20", "50", "100", "200"]
+	plain_json_count = ["10", "20", "40", "60", "100"]
 	exp_count_config = 3
 	for exp_count in range(exp_count_config):
 		if exp_count == 0:
@@ -449,7 +449,7 @@ def encry_test():
 			for plain_json_count_item in plain_json_count:
 				if exp_count == 0:
 					record[encrypt_method][plain_json_folder_item][plain_json_count_item] = {}
-				for sample_no in range(1,6):
+				for sample_no in range(1,4):
 					#record等の設定
 					if exp_count == 0:
 						record[encrypt_method][plain_json_folder_item][plain_json_count_item][str(sample_no)] = []
@@ -488,7 +488,7 @@ def main():
 
 
 	# JSONの暗号化＋書き込み
-	encry_test()
+	encry_test("add")
 				
 
 	

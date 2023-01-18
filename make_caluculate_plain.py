@@ -7,11 +7,11 @@ def randomfloat(n):
 	return random.uniform(0, 10**n)
 
 
-sample_count = [10, 20, 50, 100, 200]
+sample_count = [10, 20, 40, 60, 100]
 sample_digit = [3, 5, 7, 9]
 for sample_digit_item in sample_digit:
     for sample_count_item in sample_count:
-        for j in range(5):
+        for j in range(3):
             result = []
             for i in range(sample_count_item):
                 list_item = np.round(randomfloat(sample_digit_item), decimals=2)
