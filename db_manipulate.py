@@ -455,7 +455,7 @@ def main():
 	encrypt_method = "add"
 	plain_json_folder = ["3.2", "5.2", "7.2", "9.2"]
 	plain_json_count = ["50", "100", "200", "500"]
-	exp_count_config = 5
+	exp_count_config = 3
 	for exp_count in range(exp_count_config):
 		if exp_count == 0:
 			record[encrypt_method] = {}
@@ -481,7 +481,8 @@ def main():
 					time_sta = time.perf_counter()
 					add_insert_encrypted_data(plain_json_name, encrypted_json_name)
 					time_end = time.perf_counter()
-					record["add"][plain_json_folder_item][plain_json_count_item][str(sample_no)].append(exp_count)
+					elapsed_time = time_end - time_sta
+					record["add"][plain_json_folder_item][plain_json_count_item][str(sample_no)].append(elapsed_time)
 
 					with open(record_json_name, "w") as f:
 						json.dump(record, f, indent = 4)
