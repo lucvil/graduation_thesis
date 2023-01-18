@@ -436,7 +436,6 @@ def encry_test(encrypt_method):
 	##record_josn_nameを毎回変えること
 	record_json_name = "./record/encry/" + encrypt_method + "_encry/" + encrypt_method + "_encry_record.json"
 
-	encrypt_method = "add"
 	plain_json_folder = ["3.2", "5.2", "7.2", "9.2"]
 	plain_json_count = ["10", "20", "40", "60", "100"]
 	exp_count_config = 3
@@ -463,10 +462,10 @@ def encry_test(encrypt_method):
 
 					# 時間を計測
 					time_sta = time.perf_counter()
-					add_insert_encrypted_data(plain_json_name, encrypted_json_name)
+					full_insert_encrypted_data(plain_json_name, encrypted_json_name)
 					time_end = time.perf_counter()
 					elapsed_time = time_end - time_sta
-					record["add"][plain_json_folder_item][plain_json_count_item][str(sample_no)].append(elapsed_time)
+					record[encrypt_method][plain_json_folder_item][plain_json_count_item][str(sample_no)].append(elapsed_time)
 
 					with open(record_json_name, "w") as f:
 						json.dump(record, f, indent = 4)
@@ -488,7 +487,7 @@ def main():
 
 
 	# JSONの暗号化＋書き込み
-	encry_test("add")
+	encry_test("full")
 				
 
 	
