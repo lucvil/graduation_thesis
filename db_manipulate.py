@@ -88,6 +88,38 @@ def full_insert_encrypted_data(plain_json_name, encrypted_json_name):
 
 	return encrypted_json_data
 
+
+def add_insert_decrypted_data(encrypted_json_name, decrypted_json_name):
+	encrypted_json_file = open(encrypted_json_name, 'r')
+	encrypted_json_data = json.load(encrypted_json_file)
+
+	full_collection_name = "add_test"
+
+	# 暗号化
+	decrypted_json_data = add_encrypt.add_decrypt_json(encrypted_json_data,full_collection_name)
+
+	# ファイルに書き込み
+	with open(decrypted_json_name, "w+") as f:
+		json.dump(decrypted_json_data, f, indent = 4)
+
+	return decrypted_json_data
+
+
+def full_insert_decrypted_data(encrypted_json_name, decrypted_json_name):
+	encrypted_json_file = open(encrypted_json_name, 'r')
+	encrypted_json_data = json.load(encrypted_json_file)
+
+	full_collection_name = "full_test"
+
+	# 暗号化
+	decrypted_json_data = full_encrypt.full_decrypt_json(encrypted_json_data,full_collection_name)
+
+	# ファイルに書き込み
+	with open(decrypted_json_name, "w+") as f:
+		json.dump(decrypted_json_data, f, indent = 4)
+
+	return decrypted_json_data
+
 # 検索＋計算
 # def caluculate_data(json_name, collection_name):
 # 答えの数字を返す
@@ -361,7 +393,6 @@ def parallel_distribute_order_do_full_only(order_list):
 	return multiprocess_result_list
 
 
-
 # 計算命令のみをランダム生成する
 def make_calc_order(order_num, first_list_long, collection_name):
 	order_list = []
@@ -425,8 +456,6 @@ def make_calc_change_order(order_num, first_list_long, collection_name):
 
 # order[計算list or 追加リスト、　操作内容、　collection_name、　命令番号、　変更ステージ]
 
-		
-
 
 # 暗号化テスト
 def encry_test(encrypt_method):
@@ -471,6 +500,50 @@ def encry_test(encrypt_method):
 						json.dump(record, f, indent = 4)
 
 
+# 復号化テスト
+# add と　full　で一箇所変更点あり
+def decry_test(decrypt_method):
+	record = {}
+	record["title"] = decrypt_method + "_decryption"
+
+	##record_josn_nameを毎回変えること
+	record_json_name = "./record/decry/" + decrypt_method + "_encry/" + decrypt_method + "_decry_record.json"
+
+	encrypted_json_folder = ["3.2", "5.2", "7.2", "9.2"]
+	encrypted_json_count = ["10", "20", "40", "60", "100"]
+	exp_count_config = 3
+	for exp_count in range(exp_count_config):
+		if exp_count == 0:
+			record[decrypt_method] = {}
+		for encrypted_json_folder_item in encrypted_json_folder:
+			if exp_count == 0:
+				record[decrypt_method][encrypted_json_folder_item] = {}
+			for encrypted_json_count_item in encrypted_json_count:
+				if exp_count == 0:
+					record[decrypt_method][encrypted_json_folder_item][encrypted_json_count_item] = {}
+				for sample_no in range(1,4):
+					#record等の設定
+					if exp_count == 0:
+						record[decrypt_method][encrypted_json_folder_item][encrypted_json_count_item][str(sample_no)] = []
+					encrypted_json_name = "./encrypted_data/" + decrypt_method+ "_encry/" + encrypted_json_folder_item + "/" + encrypted_json_count_item + "p_" + encrypted_json_folder_item + "_" + str(sample_no) + ".json"
+					decrypted_json_name = "./decrypted_data/" + decrypt_method+ "_encry/" + encrypted_json_folder_item + "/" + encrypted_json_count_item + "p_" + encrypted_json_folder_item + "_" + str(sample_no) + ".json"
+
+					# ファイルを空白に戻す
+					white_data = []
+					with open(decrypted_json_name, "w") as f:
+						json.dump(white_data, f, indent = 4)
+
+					# 時間を計測
+					time_sta = time.perf_counter()
+					# add と　full　をここでかえる
+					full_insert_decrypted_data(encrypted_json_name, decrypted_json_name)
+					time_end = time.perf_counter()
+					elapsed_time = time_end - time_sta
+					record[decrypt_method][encrypted_json_folder_item][encrypted_json_count_item][str(sample_no)].append(elapsed_time)
+
+					with open(record_json_name, "w") as f:
+						json.dump(record, f, indent = 4)
+
 
 def main():
 
@@ -485,12 +558,6 @@ def main():
 	# with open("./encrypted_text.json", "w") as f:
 	# 	json.dump(result, f, indent = 4)
 
-
-	# JSONの暗号化＋書き込み
-	encry_test("full")
-				
-
-	
 
 	# with open("time.json", "w") as f:
 	# 	time_result = {
@@ -531,8 +598,12 @@ def main():
 	# parallel_distribute_order_do_add_full(order_list)
 	
 
+	#TEST
+	# # JSONの暗号化＋書き込み
+	# encry_test("full")
 
-	#計算+追加・削除
+	# JSONの復号化＋書き込み
+	decry_test("full")
 
 
 if __name__ == '__main__':
