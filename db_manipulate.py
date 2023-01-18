@@ -38,17 +38,14 @@ def insert_data(json_name,collection_name):
     # jsonファイルの読み出し
 	json_file = open(json_name,'r')
 	plain_json_data = json.load(json_file)
-	print(type(plain_json_data[0]))
 
 	add_collection_name = "add_" + collection_name
 	full_collection_name = "full_" + collection_name
 
-	print(add_collection_name)
-
 	#ここからは非同期(要修正)
 	#plain_json_dataを暗号化
-	add_encrypted_json_data = add_encrypt.add_encrypt_json(plain_json_data,add_collection_name)
-	# full_encrypted_json_data = full_encrypt.full_encrypt_json(plain_json_data,full_collection_name)
+	# add_encrypted_json_data = add_encrypt.add_encrypt_json(plain_json_data,add_collection_name)
+	full_encrypted_json_data = full_encrypt.full_encrypt_json(plain_json_data,full_collection_name)
 
 	# #mongodbに挿入
 	# mongodb = TestMongo()
@@ -56,8 +53,8 @@ def insert_data(json_name,collection_name):
 	# del full_encrypted_json_data["_id"]
 
 
-	return add_encrypted_json_data
-	# return full_encrypted_json_data
+	# return add_encrypted_json_data
+	return full_encrypted_json_data
 
 
 # 検索＋計算
@@ -102,7 +99,7 @@ def caluculate_data(plain_json_data, collection_name):
 # 全てを加法準同型暗号で計算
 def calc_change_add_encry(calc_index_list, method, collection_name):
 	add_collection_name = "add_" + collection_name
-	db_file_place = "./encrypted_data/add_encrypted_data.json"
+	db_file_place = "./encrypted_data/add_encry_exp copy.json"
 
 	# jsonファイルの読み出し
 	json_file = open(db_file_place,'r')
@@ -144,14 +141,15 @@ def calc_change_add_encry(calc_index_list, method, collection_name):
 # 全てを完全準同型暗号で計算
 def calc_change_full_encry(calc_index_list, method, collection_name):
 	full_collection_name = "full_" + collection_name
-	db_file_place = "./encrypted_data/full_encrypted_data.json"
+	db_file_place = "./encrypted_data/full_encry_exp copy.json"
 
 	# jsonファイルの読み出し
 	json_file = open(db_file_place,'r')
 	full_encrypted_json_data = json.load(json_file)
 
 	#　今回はfull_encrypted_json_dataにリストが来るとして考える(実際はjson typeで来てその中から該当部分を検索しリスト化する工程が加わる)
-	full_encrypted_calc_list = [full_encrypted_json_data[i] for i in calc_index_list]
+	if method != "add" and method != "delete":
+		full_encrypted_calc_list = [full_encrypted_json_data[i] for i in calc_index_list]
 
 
 	# 計算
@@ -185,8 +183,8 @@ def calc_change_full_encry(calc_index_list, method, collection_name):
 def caluculate_both_encry(calc_index_list, method, collection_name):
 	add_collection_name = "add_" + collection_name
 	full_collection_name = "full_" + collection_name
-	add_db_file_place = "./encrypted_data/add_encrypted_data.json"
-	full_db_file_place = "./encrypted_data/full_encrypted_data.json"
+	add_db_file_place = "./encrypted_data/add_encry_exp copy.json"
+	full_db_file_place = "./encrypted_data/full_encry_exp copy.json"
 
 	#　計算
 	if method == "sum":
@@ -267,24 +265,36 @@ def parallel_distribute_order_do_add_full(order_list):
 	manager = multiprocessing.Manager()
 	multiprocess_result_list = manager.list()
 	add_process = Process(target=do_order_list_add_or_full, args=(calc_change_add_encry, add_order_list,multiprocess_result_list,))
-	# full_process = Process(target=do_order_list, args=(calc_change_full_encry, full_order_list,multiprocess_result_list,))
+	full_process = Process(target=do_order_list_add_or_full, args=(calc_change_full_encry, full_order_list,multiprocess_result_list,))
 	add_process.start()
-	# full_process.start()
+	full_process.start()
 	add_process.join()
-	# full_process.join()
+	full_process.join()
 
 	print(multiprocess_result_list)
+	return multiprocess_result_list
 
 
 
 #order_listに従って上記の完全準同型にデータを流す
-def do_order_list_full_onky(calc_func, order_list, multiprocess_result_list, multiprocess_change_stage):
+def do_order_list_full_only(calc_func, order_list, multiprocess_result_list, multiprocess_change_stage):
 	for order_list_item in order_list:
 		# 要追加実装
-		answer_item = calc_func(order_list_item[0], order_list_item[1], order_list_item[2])
-		multiprocess_result_list.append([answer_item, order_list_item[3]])
+		if order_list_item[1] == "add" or order_list_item[1] == "delete":
+			while multiprocess_change_stage.value != int(order_list_item[4]) - 0.5:
+				pass 
+			answer_item = calc_func(order_list_item[0], order_list_item[1], order_list_item[2])
+			multiprocess_result_list.append([answer_item, order_list_item[3]])
+			multiprocess_change_stage.value = order_list_item[4]
+		else:
+			while multiprocess_change_stage.value != int(order_list_item[4]) and multiprocess_change_stage.value != int(order_list_item[4]) + 0.5:
+				pass
+			answer_item = calc_func(order_list_item[0], order_list_item[1], order_list_item[2])
+			multiprocess_result_list.append([answer_item, order_list_item[3]])
+			if multiprocess_change_stage.value < order_list_item[4]:
+				multiprocess_change_stage.value = order_list_item[4]			
 
-	return 1	
+	return 1
 
 
 #　並列処理＋完全準同型のみ
@@ -305,12 +315,19 @@ def parallel_distribute_order_do_full_only(order_list):
 	manager = multiprocessing.Manager()
 	multiprocess_result_list = manager.list()
 	if order_list[0][1] == "add" or order_list[0][1] == "delete":
-		change_stage = Value("d", 0.6)
+		change_stage = Value("d", 0.5)
 	else:
-		change_stage = Value("d", 0)
-	full_process_1 = Process(target=do_order_list_add_or_full, args=(calc_change_add_encry, full_order_list_1,multiprocess_result_list, change_stage,))
+		change_stage = Value("d", 0.0)
+	full_process_1 = Process(target=do_order_list_full_only, args=(calc_change_full_encry, full_order_list_1,multiprocess_result_list, change_stage,))
+	full_process_2 = Process(target=do_order_list_full_only, args=(calc_change_full_encry, full_order_list_2,multiprocess_result_list, change_stage,))
 	# 続き
+	full_process_1.start()
+	full_process_2.start()
+	full_process_1.join()
+	full_process_2.join()
 
+	print(multiprocess_result_list)
+	return multiprocess_result_list
 
 
 
@@ -355,20 +372,20 @@ def make_calc_change_order(order_num, first_list_long, collection_name):
 			add_plain_list =  [randomfloat(3) for i in range(add_long)]
 			change_stage += 1
 			order_item = [add_plain_list, calc_kind, collection_name, i, change_stage]
-			if len(order_list) >= 2:
-				order_list[-2][4] += 0.6
 			db_list_long += add_long
 			order_list.append(order_item)
+			if len(order_list) >= 2:
+				order_list[-2][4] += 0.5
 		elif calc_kind == "delete":
 			#データ削除
 			delete_long = random.randint(1,10)
 			delete_index_list = random.sample(range(db_list_long), k=delete_long)
 			change_stage += 1
 			order_item = [delete_index_list, calc_kind, collection_name, i, change_stage]
-			if len(order_list) >= 2:
-				order_list[-2][4] += 0.6
 			db_list_long -= delete_long
 			order_list.append(order_item)
+			if len(order_list) >= 2:
+				order_list[-2][4] += 0.5
 
 			
 	print(order_list)
@@ -431,7 +448,7 @@ def main():
 	json_name = sys.argv[1]
 	collection_name = sys.argv[2]
 	order_list = make_calc_change_order(100,100, collection_name)
-	parallel_distribute_order_do_full_only(order_list)
+	parallel_distribute_order_do_add_full(order_list)
 	
 
 
