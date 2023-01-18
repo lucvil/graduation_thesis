@@ -425,27 +425,11 @@ def make_calc_change_order(order_num, first_list_long, collection_name):
 
 # order[計算list or 追加リスト、　操作内容、　collection_name、　命令番号、　変更ステージ]
 
-#change_stageのバグ修正すること
 		
 
 
-
-
-def main():
-
-	# # insert json old
-	# json_name = sys.argv[1]
-	# collection_name = sys.argv[2]
-
-	# time_sta = time.perf_counter()
-	# result = insert_data(json_name,collection_name)
-	# time_end = time.perf_counter()
-
-	# with open("./encrypted_text.json", "w") as f:
-	# 	json.dump(result, f, indent = 4)
-
-
-	# JSONの暗号化＋書き込み
+# 暗号化テスト
+def encry_test():
 	record = {}
 	record["title"] = "add_encryption"
 
@@ -487,6 +471,24 @@ def main():
 					with open(record_json_name, "w") as f:
 						json.dump(record, f, indent = 4)
 
+
+
+def main():
+
+	# # insert json old
+	# json_name = sys.argv[1]
+	# collection_name = sys.argv[2]
+
+	# time_sta = time.perf_counter()
+	# result = insert_data(json_name,collection_name)
+	# time_end = time.perf_counter()
+
+	# with open("./encrypted_text.json", "w") as f:
+	# 	json.dump(result, f, indent = 4)
+
+
+	# JSONの暗号化＋書き込み
+	encry_test()
 				
 
 	
