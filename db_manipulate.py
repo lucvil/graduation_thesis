@@ -160,9 +160,8 @@ def caluculate_data(plain_json_data, collection_name):
 
 
 # 全てを加法準同型暗号で計算
-def calc_change_add_encry(calc_index_list, method, collection_name):
+def calc_change_add_encry(calc_index_list, method, collection_name, db_file_place):
 	add_collection_name = "add_" + collection_name
-	db_file_place = "./encrypted_data/add_encry_exp copy.json"
 
 	# jsonファイルの読み出し
 	json_file = open(db_file_place,'r')
@@ -202,9 +201,8 @@ def calc_change_add_encry(calc_index_list, method, collection_name):
 
 
 # 全てを完全準同型暗号で計算
-def calc_change_full_encry(calc_index_list, method, collection_name):
+def calc_change_full_encry(calc_index_list, method, collection_name, db_file_place):
 	full_collection_name = "full_" + collection_name
-	db_file_place = "./encrypted_data/full_encry_exp copy.json"
 
 	# jsonファイルの読み出し
 	json_file = open(db_file_place,'r')
@@ -243,6 +241,7 @@ def calc_change_full_encry(calc_index_list, method, collection_name):
 
 # 加法・完全準同型暗号の両方を用いて計算
 # 今回は合計・平均は加法準同型を、分散は完全準同型を用いる
+# 外からdb_file_placeを変更できるようにしておくこと
 def caluculate_both_encry(calc_index_list, method, collection_name):
 	add_collection_name = "add_" + collection_name
 	full_collection_name = "full_" + collection_name
@@ -300,16 +299,16 @@ def caluculate_both_encry(calc_index_list, method, collection_name):
 
 
 # order_listに従って上記の三つにデータを流す
-def do_order_list_add_or_full(calc_func, order_list, multiprocess_result_list):
+def do_order_list_add_or_full(calc_func, order_list, multiprocess_result_list, db_file_place):
 	for order_list_item in order_list:
-		answer_item = calc_func(order_list_item[0], order_list_item[1], order_list_item[2])
+		answer_item = calc_func(order_list_item[0], order_list_item[1], order_list_item[2], db_file_place)
 		multiprocess_result_list.append([answer_item, order_list_item[3]])
 	
 	return 1
 
 
 # 命令を加法と完全に振り分け並列処理する
-def parallel_distribute_order_do_add_full(order_list):
+def parallel_distribute_order_do_add_full(order_list, add_db_file_place, full_db_file_place):
 
 	#命令振り分け
 	add_order_list = []
@@ -327,11 +326,20 @@ def parallel_distribute_order_do_add_full(order_list):
 	#async, threadingm, multiprocessing の三種類があるが、今回は並列処理のmultiprocessingを用いる
 	manager = multiprocessing.Manager()
 	multiprocess_result_list = manager.list()
-	add_process = Process(target=do_order_list_add_or_full, args=(calc_change_add_encry, add_order_list,multiprocess_result_list,))
-	full_process = Process(target=do_order_list_add_or_full, args=(calc_change_full_encry, full_order_list,multiprocess_result_list,))
+	add_process = Process(target=do_order_list_add_or_full, args=(calc_change_add_encry, add_order_list, multiprocess_result_list, add_db_file_place,))
+	full_process = Process(target=do_order_list_add_or_full, args=(calc_change_full_encry, full_order_list, multiprocess_result_list, full_db_file_place,))
+	
+	# time_sta = time.perf_counter()
 	add_process.start()
 	full_process.start()
 	add_process.join()
+	# time_end = time.perf_counter()
+	# with open("time.json", "w") as f:
+	# 	time_result = {
+	# 		"add_encry_time": time_end - time_sta
+	# 	}
+	# 	json.dump(time_result, f, indent = 4)
+	
 	full_process.join()
 
 	print(multiprocess_result_list)
@@ -340,19 +348,19 @@ def parallel_distribute_order_do_add_full(order_list):
 
 
 #order_listに従って上記の完全準同型にデータを流す
-def do_order_list_full_only(calc_func, order_list, multiprocess_result_list, multiprocess_change_stage):
+def do_order_list_full_only(calc_func, order_list, multiprocess_result_list, multiprocess_change_stage, db_file_place):
 	for order_list_item in order_list:
 		# 要追加実装
 		if order_list_item[1] == "add" or order_list_item[1] == "delete":
 			while multiprocess_change_stage.value != int(order_list_item[4]) - 0.5:
 				pass 
-			answer_item = calc_func(order_list_item[0], order_list_item[1], order_list_item[2])
+			answer_item = calc_func(order_list_item[0], order_list_item[1], order_list_item[2], db_file_place)
 			multiprocess_result_list.append([answer_item, order_list_item[3]])
 			multiprocess_change_stage.value = order_list_item[4]
 		else:
 			while multiprocess_change_stage.value != int(order_list_item[4]) and multiprocess_change_stage.value != int(order_list_item[4]) + 0.5:
 				pass
-			answer_item = calc_func(order_list_item[0], order_list_item[1], order_list_item[2])
+			answer_item = calc_func(order_list_item[0], order_list_item[1], order_list_item[2], db_file_place)
 			multiprocess_result_list.append([answer_item, order_list_item[3]])
 			if multiprocess_change_stage.value < order_list_item[4]:
 				multiprocess_change_stage.value = order_list_item[4]			
@@ -361,7 +369,7 @@ def do_order_list_full_only(calc_func, order_list, multiprocess_result_list, mul
 
 
 #　並列処理＋完全準同型のみ
-def parallel_distribute_order_do_full_only(order_list):
+def parallel_distribute_order_do_full_only(order_list, full_db_file_place):
 
 	#命令振り分け
 	full_order_list_1 = []
@@ -381,8 +389,8 @@ def parallel_distribute_order_do_full_only(order_list):
 		change_stage = Value("d", 0.5)
 	else:
 		change_stage = Value("d", 0.0)
-	full_process_1 = Process(target=do_order_list_full_only, args=(calc_change_full_encry, full_order_list_1,multiprocess_result_list, change_stage,))
-	full_process_2 = Process(target=do_order_list_full_only, args=(calc_change_full_encry, full_order_list_2,multiprocess_result_list, change_stage,))
+	full_process_1 = Process(target=do_order_list_full_only, args=(calc_change_full_encry, full_order_list_1,multiprocess_result_list, change_stage, full_db_file_place,))
+	full_process_2 = Process(target=do_order_list_full_only, args=(calc_change_full_encry, full_order_list_2,multiprocess_result_list, change_stage, full_db_file_place,))
 	# 続き
 	full_process_1.start()
 	full_process_2.start()
@@ -419,7 +427,7 @@ def make_calc_change_order(order_num, first_list_long, collection_name):
 	#命令生成
 	for i in range(order_num):
 		calc_kind_seed = random.randint(0,4)
-		calc_kind = np.random.choice(["sum", "average", "stdev", "add", "delete"], p=[0.2, 0.2, 0.2, 0.2, 0.2])
+		calc_kind = np.random.choice(["sum", "average", "stdev", "add", "delete"], p=[0.266, 0.266, 0.268, 0.1, 0.1])
 		
 		if calc_kind == "sum" or calc_kind == "average" or calc_kind == "stdev":
 			# データ計算
@@ -450,7 +458,6 @@ def make_calc_change_order(order_num, first_list_long, collection_name):
 				order_list[-2][4] += 0.5
 
 			
-	print(order_list)
 	return order_list
 
 
@@ -459,25 +466,36 @@ def make_calc_change_order(order_num, first_list_long, collection_name):
 
 # 暗号化テスト
 def encry_test(encrypt_method):
-	record = {}
-	record["title"] = encrypt_method + "_encryption"
 
 	##record_josn_nameを毎回変えること
 	record_json_name = "./record/encry/" + encrypt_method + "_encry/" + encrypt_method + "_encry_record.json"
 
-	plain_json_folder = ["3.2", "5.2", "7.2", "9.2"]
-	plain_json_count = ["10", "20", "40", "60", "100"]
-	exp_count_config = 3
+	record_file = open(record_json_name,'r')
+	record = json.load(record_file)
+
+	record["title"] = encrypt_method + "_encryption"
+
+	plain_json_folder = ["5.2"]
+	plain_json_count = ["500" , "1000", "5000" , "10000"]
+	exp_count_config = 2
+	sample_count_config = 2
+	overwrite_flag = False
 	for exp_count in range(exp_count_config):
-		if exp_count == 0:
+		if exp_count == 0 and overwrite_flag:
 			record[encrypt_method] = {}
 		for plain_json_folder_item in plain_json_folder:
-			if exp_count == 0:
+			if exp_count == 0 and overwrite_flag:
 				record[encrypt_method][plain_json_folder_item] = {}
+
+			# 10000はデカすぎので特別措置
+			if plain_json_folder_item  == "10000" and exp_count == exp_count_config - 1:
+				break
+
+			
 			for plain_json_count_item in plain_json_count:
 				if exp_count == 0:
 					record[encrypt_method][plain_json_folder_item][plain_json_count_item] = {}
-				for sample_no in range(1,4):
+				for sample_no in range(1,sample_count_config + 1):
 					#record等の設定
 					if exp_count == 0:
 						record[encrypt_method][plain_json_folder_item][plain_json_count_item][str(sample_no)] = []
@@ -490,9 +508,9 @@ def encry_test(encrypt_method):
 						json.dump(white_data, f, indent = 4)
 
 					# 時間を計測
-					time_sta = time.perf_counter()
+					time_sta = time.time()
 					full_insert_encrypted_data(plain_json_name, encrypted_json_name)
-					time_end = time.perf_counter()
+					time_end = time.time()
 					elapsed_time = time_end - time_sta
 					record[encrypt_method][plain_json_folder_item][plain_json_count_item][str(sample_no)].append(elapsed_time)
 
@@ -503,25 +521,35 @@ def encry_test(encrypt_method):
 # 復号化テスト
 # add と　full　で一箇所変更点あり
 def decry_test(decrypt_method):
-	record = {}
-	record["title"] = decrypt_method + "_decryption"
 
 	##record_josn_nameを毎回変えること
 	record_json_name = "./record/decry/" + decrypt_method + "_encry/" + decrypt_method + "_decry_record.json"
 
+	record_file = open(record_json_name,'r')
+	record = json.load(record_file)
+
+	record["title"] = decrypt_method + "_decryption"
+
 	encrypted_json_folder = ["3.2", "5.2", "7.2", "9.2"]
 	encrypted_json_count = ["10", "20", "40", "60", "100"]
 	exp_count_config = 3
+	sample_count_config = 3
+	overwrite_flag = False
 	for exp_count in range(exp_count_config):
-		if exp_count == 0:
+		if exp_count == 0 and overwrite_flag:
 			record[decrypt_method] = {}
 		for encrypted_json_folder_item in encrypted_json_folder:
-			if exp_count == 0:
+			if exp_count == 0 and overwrite_flag:
 				record[decrypt_method][encrypted_json_folder_item] = {}
+
+			# 10000はデカすぎので特別措置
+			if encrypted_json_folder_item  == "10000" and exp_count == exp_count_config - 1:
+				break
+
 			for encrypted_json_count_item in encrypted_json_count:
 				if exp_count == 0:
 					record[decrypt_method][encrypted_json_folder_item][encrypted_json_count_item] = {}
-				for sample_no in range(1,4):
+				for sample_no in range(1,sample_count_config + 1):
 					#record等の設定
 					if exp_count == 0:
 						record[decrypt_method][encrypted_json_folder_item][encrypted_json_count_item][str(sample_no)] = []
@@ -534,10 +562,10 @@ def decry_test(decrypt_method):
 						json.dump(white_data, f, indent = 4)
 
 					# 時間を計測
-					time_sta = time.perf_counter()
+					time_sta = time.time()
 					# add と　full　をここでかえる
 					full_insert_decrypted_data(encrypted_json_name, decrypted_json_name)
-					time_end = time.perf_counter()
+					time_end = time.time()
 					elapsed_time = time_end - time_sta
 					record[decrypt_method][encrypted_json_folder_item][encrypted_json_count_item][str(sample_no)].append(elapsed_time)
 
@@ -599,11 +627,35 @@ def main():
 	
 
 	#TEST
-	# # JSONの暗号化＋書き込み
-	# encry_test("full")
+	# JSONの暗号化＋書き込み
+	encry_test("add")
 
-	# JSONの復号化＋書き込み
-	decry_test("full")
+	# # JSONの復号化＋書き込み
+	# decry_test("full")
+
+	# # 命令文を作る
+	# order_list = make_calc_change_order(100,100, "test")
+	# with open("./order/order.json", "w") as f:
+	# 	json.dump(order_list, f, indent = 4)
+
+	# # システムテスト
+    # # jsonファイルの読み出し
+	# order_file = open("./order/order.json",'r')
+	# order_json_data = json.load(order_file)
+	# add_db_file_place = "./encrypted_data/manipulate/add_encry/100p_3.2_1 copy.json"
+	# full_db_file_place = "./encrypted_data/manipulate/full_encry/100p_3.2_1 copy.json"
+	# time_sta = time.perf_counter()
+	# parallel_distribute_order_do_add_full(order_json_data, add_db_file_place, full_db_file_place)
+	# time_end = time.perf_counter()
+
+	# with open("time.json", "w") as f:
+	# 	time_result = {
+	# 		"add_encry_time": time_end - time_sta
+	# 	}
+	# 	json.dump(time_result, f, indent = 4)	
+
+	
+
 
 
 if __name__ == '__main__':
@@ -612,8 +664,11 @@ if __name__ == '__main__':
 
 
 #時間の計測
-# time_sta = time.perf_counter()
+# time_sta = time.time()
 #(処理)
+# time_end = time.time()
+
+# time_sta = time.perf_counter()
 # time_end = time.perf_counter()
 
 # with open("time.json", "w") as f:
