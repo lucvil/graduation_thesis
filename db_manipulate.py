@@ -476,7 +476,7 @@ def encry_test(encrypt_method):
 	record["title"] = encrypt_method + "_encryption"
 
 	plain_json_folder = ["5.2"]
-	plain_json_count = ["500" , "1000", "5000" , "10000"]
+	plain_json_count = ["500" , "750", "1000" , "1500"]
 	exp_count_config = 2
 	sample_count_config = 2
 	overwrite_flag = False
@@ -488,7 +488,7 @@ def encry_test(encrypt_method):
 				record[encrypt_method][plain_json_folder_item] = {}
 
 			# 10000はデカすぎので特別措置
-			if plain_json_folder_item  == "10000" and exp_count == exp_count_config - 1:
+			if plain_json_folder_item  == "1500" and exp_count == exp_count_config - 1:
 				break
 
 			
@@ -509,6 +509,7 @@ def encry_test(encrypt_method):
 
 					# 時間を計測
 					time_sta = time.time()
+					# add と full　で下の関数を変える
 					full_insert_encrypted_data(plain_json_name, encrypted_json_name)
 					time_end = time.time()
 					elapsed_time = time_end - time_sta
@@ -564,7 +565,7 @@ def decry_test(decrypt_method):
 					# 時間を計測
 					time_sta = time.time()
 					# add と　full　をここでかえる
-					full_insert_decrypted_data(encrypted_json_name, decrypted_json_name)
+					add_insert_decrypted_data(encrypted_json_name, decrypted_json_name)
 					time_end = time.time()
 					elapsed_time = time_end - time_sta
 					record[decrypt_method][encrypted_json_folder_item][encrypted_json_count_item][str(sample_no)].append(elapsed_time)
@@ -628,7 +629,7 @@ def main():
 
 	#TEST
 	# JSONの暗号化＋書き込み
-	encry_test("add")
+	encry_test("full")
 
 	# # JSONの復号化＋書き込み
 	# decry_test("full")
