@@ -476,7 +476,7 @@ def encry_test(encrypt_method):
 	record["title"] = encrypt_method + "_encryption"
 
 	plain_json_folder = ["5.2"]
-	plain_json_count = ["500" , "750", "1000" , "1500"]
+	plain_json_count = ["5000", "10000"]
 	exp_count_config = 2
 	sample_count_config = 2
 	overwrite_flag = False
