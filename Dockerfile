@@ -27,7 +27,7 @@ RUN apt-get update && apt-get install -y mongodb-org
 # 自宅mac
 # docker run -it --rm --mount type=bind,source=/Users/goodapple/Documents/卒論/実装,target=/project atsuki-test 
 # lab mac
-# docker run -it --rm --mount type=bind,source=/Users/sail/Documents/吉村/卒論/graduation_thesis,target=/project atsuki-test
+# docker run -it -m 500g --oom-kill-disable=true --rm --mount type=bind,source=/Users/sail/Documents/吉村/卒論/graduation_thesis,target=/project atsuki-test
 #cd /project/
 
 #入った後

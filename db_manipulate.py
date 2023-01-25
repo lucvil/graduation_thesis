@@ -476,7 +476,7 @@ def encry_test(encrypt_method):
 	record["title"] = encrypt_method + "_encryption"
 
 	plain_json_folder = ["5.2"]
-	plain_json_count = ["5000", "10000"]
+	plain_json_count = ["1600", "1700", "1800", "1900"]
 	exp_count_config = 2
 	sample_count_config = 2
 	overwrite_flag = False
@@ -488,7 +488,7 @@ def encry_test(encrypt_method):
 				record[encrypt_method][plain_json_folder_item] = {}
 
 			# 10000はデカすぎので特別措置
-			if plain_json_folder_item  == "1500" and exp_count == exp_count_config - 1:
+			if plain_json_folder_item  == "10000" and exp_count == exp_count_config - 1:
 				break
 
 			
