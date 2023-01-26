@@ -6,6 +6,8 @@ import time
 from pymongo import MongoClient
 import random
 import numpy as np
+import statistics
+
 
 #並列処理
 from multiprocessing import Process, Value
@@ -157,6 +159,41 @@ def caluculate_data(plain_json_data, collection_name):
 	full_plain_sum = full_encrypt.full_decrypt_one(full_encrypted_sum, full_collection_name)
 
 	return full_plain_sum
+
+
+def calc_change_plain(calc_index_list, method, collection_name, db_file_place):
+	plain_collection_name = collection_name
+
+	# jsonファイルの読み出し
+	json_file = open(db_file_place,'r')
+	plain_json_data = json.load(json_file)
+
+
+	#　今回はadd_encrypted_json_dataにリストが来るとして考える(実際はjson typeで来てその中から該当部分を検索しリスト化する工程が加わる)
+	if method != "add" and method != "delete":
+		plain_calc_list = [plain_json_data[i] for i in calc_index_list]
+
+
+	# 計算
+	if method == "sum":
+		plain_answer = sum(plain_calc_list)
+	elif method == "average":
+		plain_answer = statistics.mean(plain_calc_list)
+	elif method == "stdev":
+		plain_answer = statistics.pvariance(plain_calc_list)
+	elif method == "add":
+		plain_json_data.extend(add_encrypt.add_encrypt_json(calc_index_list, plain_collection_name))
+		with open(db_file_place, "w") as f:
+			json.dump(plain_json_data, f, indent = 4)
+	elif method == "delete":
+		plain_deleted_json_data = [plain_json_data[i] for i in range(len(plain_json_data)) if i not in calc_index_list]
+
+		with open(db_file_place, "w") as f:
+			json.dump(plain_deleted_json_data, f, indent = 4)		
+	else:
+		print("error")
+
+	return plain_answer
 
 
 # 全てを加法準同型暗号で計算
@@ -475,8 +512,8 @@ def encry_test(encrypt_method):
 
 	record["title"] = encrypt_method + "_encryption"
 
-	plain_json_folder = ["5.2"]
-	plain_json_count = ["1600", "1700", "1800", "1900"]
+	plain_json_folder = ["3.2","5.2","7.2","9.2"]
+	plain_json_count = ["500"]
 	exp_count_config = 2
 	sample_count_config = 2
 	overwrite_flag = False
@@ -487,10 +524,6 @@ def encry_test(encrypt_method):
 			if exp_count == 0 and overwrite_flag:
 				record[encrypt_method][plain_json_folder_item] = {}
 
-			# 10000はデカすぎので特別措置
-			if plain_json_folder_item  == "10000" and exp_count == exp_count_config - 1:
-				break
-
 			
 			for plain_json_count_item in plain_json_count:
 				if exp_count == 0:
@@ -499,8 +532,8 @@ def encry_test(encrypt_method):
 					#record等の設定
 					if exp_count == 0:
 						record[encrypt_method][plain_json_folder_item][plain_json_count_item][str(sample_no)] = []
-					plain_json_name = "./plain_data/" + plain_json_folder_item + "/" + plain_json_count_item + "p_" + plain_json_folder_item + "_" + str(sample_no) + ".json"
-					encrypted_json_name = "./encrypted_data/" + encrypt_method+ "_encry/" + plain_json_folder_item + "/" + plain_json_count_item + "p_" + plain_json_folder_item + "_" + str(sample_no) + ".json"
+					plain_json_name = "./data/plain_data/" + plain_json_folder_item + "/" + plain_json_count_item + "p_" + plain_json_folder_item + "_" + str(sample_no) + ".json"
+					encrypted_json_name = "./data/encrypted_data/" + encrypt_method+ "_encry/" + plain_json_folder_item + "/" + plain_json_count_item + "p_" + plain_json_folder_item + "_" + str(sample_no) + ".json"
 
 					# ファイルを空白に戻す
 					white_data = []
@@ -510,7 +543,7 @@ def encry_test(encrypt_method):
 					# 時間を計測
 					time_sta = time.time()
 					# add と full　で下の関数を変える
-					full_insert_encrypted_data(plain_json_name, encrypted_json_name)
+					add_insert_encrypted_data(plain_json_name, encrypted_json_name)
 					time_end = time.time()
 					elapsed_time = time_end - time_sta
 					record[encrypt_method][plain_json_folder_item][plain_json_count_item][str(sample_no)].append(elapsed_time)
@@ -531,10 +564,10 @@ def decry_test(decrypt_method):
 
 	record["title"] = decrypt_method + "_decryption"
 
-	encrypted_json_folder = ["3.2", "5.2", "7.2", "9.2"]
-	encrypted_json_count = ["10", "20", "40", "60", "100"]
-	exp_count_config = 3
-	sample_count_config = 3
+	encrypted_json_folder = ["3.2","5.2","7.2","9.2"]
+	encrypted_json_count = ["900"]
+	exp_count_config = 2
+	sample_count_config = 2
 	overwrite_flag = False
 	for exp_count in range(exp_count_config):
 		if exp_count == 0 and overwrite_flag:
@@ -554,8 +587,8 @@ def decry_test(decrypt_method):
 					#record等の設定
 					if exp_count == 0:
 						record[decrypt_method][encrypted_json_folder_item][encrypted_json_count_item][str(sample_no)] = []
-					encrypted_json_name = "./encrypted_data/" + decrypt_method+ "_encry/" + encrypted_json_folder_item + "/" + encrypted_json_count_item + "p_" + encrypted_json_folder_item + "_" + str(sample_no) + ".json"
-					decrypted_json_name = "./decrypted_data/" + decrypt_method+ "_encry/" + encrypted_json_folder_item + "/" + encrypted_json_count_item + "p_" + encrypted_json_folder_item + "_" + str(sample_no) + ".json"
+					encrypted_json_name = "./data/encrypted_data/" + decrypt_method+ "_encry/" + encrypted_json_folder_item + "/" + encrypted_json_count_item + "p_" + encrypted_json_folder_item + "_" + str(sample_no) + ".json"
+					decrypted_json_name = "./data/decrypted_data/" + decrypt_method+ "_encry/" + encrypted_json_folder_item + "/" + encrypted_json_count_item + "p_" + encrypted_json_folder_item + "_" + str(sample_no) + ".json"
 
 					# ファイルを空白に戻す
 					white_data = []
@@ -565,13 +598,72 @@ def decry_test(decrypt_method):
 					# 時間を計測
 					time_sta = time.time()
 					# add と　full　をここでかえる
-					add_insert_decrypted_data(encrypted_json_name, decrypted_json_name)
+					full_insert_decrypted_data(encrypted_json_name, decrypted_json_name)
 					time_end = time.time()
 					elapsed_time = time_end - time_sta
 					record[decrypt_method][encrypted_json_folder_item][encrypted_json_count_item][str(sample_no)].append(elapsed_time)
 
 					with open(record_json_name, "w") as f:
 						json.dump(record, f, indent = 4)
+
+
+#　計算後にデータベースが変わってしまう問題
+# 計算テスト
+def caluculate_test(caluculate_method, encrypt_method):
+	##record_josn_nameを毎回変えること
+	record_json_name = "./record/" + caluculate_method + "/" + encrypt_method + "_encry/" + encrypt_method + "_" + caluculate_method + "_record.json"
+	record_file = open(record_json_name,'r')
+	record = json.load(record_file)	
+	result_encry = []
+	result_plain = []
+
+
+	record["title"] = encrypt_method + "_" + caluculate_method + "100kaigoukei-500database"
+	encrypted_json_folder = ["3.2","5.2", "7.2", "9.2"]
+	caluculation_count = ["10", "50", "100", "300", "500"]	
+	exp_count_config = 3
+	sample_count_config = 3
+	caluculation_repeat = 100
+	overwrite_flag = True
+	for exp_count in range(exp_count_config):
+		if exp_count == 0 and overwrite_flag:
+			record[encrypt_method] = {}
+		for encrypted_json_folder_item in encrypted_json_folder:
+			if exp_count == 0 and overwrite_flag:
+				record[encrypt_method][encrypted_json_folder_item] = {}
+			for caluculation_count_item in caluculation_count:
+				if exp_count == 0:
+					record[encrypt_method][encrypted_json_folder_item][caluculation_count_item] = {}
+				for sample_no in range(1,sample_count_config + 1):
+					#record等の設定
+					if exp_count == 0:
+						record[encrypt_method][encrypted_json_folder_item][caluculation_count_item][str(sample_no)] = []	
+					
+					encrypted_json_name = "./data/encrypted_data/" + encrypt_method+ "_encry/" + encrypted_json_folder_item + "/500p_" + encrypted_json_folder_item + "_" + str(sample_no) + ".json"
+					order_file_name = "order/" + caluculate_method + "/" + caluculation_count + "_db500_*"+ caluculation_repeat + "_" + str(sample_no) + ".json"
+					order_file = open(order_file_name,'r')
+					order_list = json.load(order_file)
+
+
+
+					for i in range(caluculation_repeat):
+						if caluculate_method == "add":
+							result_item = calc_change_add_encry(order_list[i][0], order_list[i][1], order_list[i][2], encrypted_json_name)
+						elif caluculate_method == "full":
+							result_item = calc_change_full_encry(order_list[i][0], order_list[i][1], order_list[i][2], encrypted_json_name)
+						else:
+							print("not match caluculate_method")
+						
+						result.append(result_item)
+
+	print(result)
+
+
+
+					
+
+
+
 
 
 def main():
@@ -628,11 +720,11 @@ def main():
 	
 
 	#TEST
-	# JSONの暗号化＋書き込み
-	encry_test("full")
+	# # JSONの暗号化＋書き込み
+	# encry_test("full")
 
 	# # JSONの復号化＋書き込み
-	# decry_test("full")
+	decry_test("full")
 
 	# # 命令文を作る
 	# order_list = make_calc_change_order(100,100, "test")
