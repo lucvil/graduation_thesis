@@ -46,8 +46,8 @@ def insert_data(json_name,collection_name):
 
 	#ここからは非同期(要修正)
 	#plain_json_dataを暗号化
-	# add_encrypted_json_data = add_encrypt.add_encrypt_json(plain_json_data,add_collection_name)
-	full_encrypted_json_data = full_encrypt.full_encrypt_json(plain_json_data,full_collection_name)
+	add_encrypted_json_data = add_encrypt.add_encrypt_json(plain_json_data,add_collection_name)
+	# full_encrypted_json_data = full_encrypt.full_encrypt_json(plain_json_data,full_collection_name)
 
 	# #mongodbに挿入
 	# mongodb = TestMongo()
@@ -55,8 +55,8 @@ def insert_data(json_name,collection_name):
 	# del full_encrypted_json_data["_id"]
 
 
-	# return add_encrypted_json_data
-	return full_encrypted_json_data
+	return add_encrypted_json_data
+	# return full_encrypted_json_data
 
 
 def add_insert_encrypted_data(plain_json_name, encrypted_json_name):
@@ -142,8 +142,8 @@ def caluculate_data(plain_json_data, collection_name):
 
 	#計算
 	time_sta = time.perf_counter()
-	# add_encrypted_sum = add_encrypt.add_caluculate_stdev(add_plain_list, add_collection_name)
-	full_encrypted_sum = full_encrypt.full_caluculate_stdev(full_plain_list, full_collection_name)
+	add_encrypted_sum = add_encrypt.add_caluculate_stdev(add_plain_list, add_collection_name)
+	# full_encrypted_sum = full_encrypt.full_caluculate_stdev(full_plain_list, full_collection_name)
 	time_end = time.perf_counter()
 
 	with open("time.json", "w") as f:
@@ -155,10 +155,12 @@ def caluculate_data(plain_json_data, collection_name):
 
 
 	#復号
-	# add_plain_sum = add_encrypt.add_decrypt_one(add_encrypted_sum, add_collection_name)
-	full_plain_sum = full_encrypt.full_decrypt_one(full_encrypted_sum, full_collection_name)
+	add_plain_sum = add_encrypt.add_decrypt_one(add_encrypted_sum, add_collection_name)
+	# full_plain_sum = full_encrypt.full_decrypt_one(full_encrypted_sum, full_collection_name)
 
-	return full_plain_sum
+
+	return add_plain_sum
+	# return full_plain_sum
 
 
 def calc_change_plain(calc_index_list, method, collection_name, db_file_place):
@@ -511,25 +513,25 @@ def encry_test(encrypt_method):
 
 	record["title"] = encrypt_method + "_encryption"
 
-	plain_json_folder = ["3.2","5.2", "7.2","9.2"]
-	plain_json_count = ["500"]
-	exp_count_config = 3
-	sample_count_config = 3
+	plain_json_folder = ["5.2"]
+	plain_json_count = ["200", "300", "400"]
+	exp_count_config = 2
+	sample_count_config = 1
 	overwrite_flag = False
 	for exp_count in range(exp_count_config):
-		if exp_count == 0 and overwrite_flag:
+		if encrypt_method not in record:
 			record[encrypt_method] = {}
 		for plain_json_folder_item in plain_json_folder:
-			if exp_count == 0 and overwrite_flag:
+			if plain_json_folder_item not in record[encrypt_method]:
 				record[encrypt_method][plain_json_folder_item] = {}
 
 			
 			for plain_json_count_item in plain_json_count:
-				if exp_count == 0:
+				if plain_json_count_item not in record[encrypt_method][plain_json_folder_item]:
 					record[encrypt_method][plain_json_folder_item][plain_json_count_item] = {}
 				for sample_no in range(1,sample_count_config + 1):
 					#record等の設定
-					if exp_count == 0:
+					if str(sample_no) not in record[encrypt_method][plain_json_folder_item][plain_json_count_item]:
 						record[encrypt_method][plain_json_folder_item][plain_json_count_item][str(sample_no)] = []
 					plain_json_name = "./data/plain_data/" + plain_json_folder_item + "/" + plain_json_count_item + "p_" + plain_json_folder_item + "_" + str(sample_no) + ".json"
 					encrypted_json_name = "./data/encrypted_data/" + encrypt_method+ "_encry/" + plain_json_folder_item + "/" + plain_json_count_item + "p_" + plain_json_folder_item + "_" + str(sample_no) + ".json"
@@ -568,28 +570,24 @@ def decry_test(decrypt_method):
 
 	record["title"] = decrypt_method + "_decryption"
 
-	encrypted_json_folder = ["3.2","5.2","7.2","9.2"]
-	encrypted_json_count = ["900"]
+	encrypted_json_folder = ["5.2"]
+	encrypted_json_count = ["200", "300", "400"]
 	exp_count_config = 2
-	sample_count_config = 2
+	sample_count_config = 1
 	overwrite_flag = False
 	for exp_count in range(exp_count_config):
-		if exp_count == 0 and overwrite_flag:
+		if decrypt_method not in record:
 			record[decrypt_method] = {}
 		for encrypted_json_folder_item in encrypted_json_folder:
-			if exp_count == 0 and overwrite_flag:
+			if encrypted_json_folder_item not in record[decrypt_method]:
 				record[decrypt_method][encrypted_json_folder_item] = {}
 
-			# 10000はデカすぎので特別措置
-			if encrypted_json_folder_item  == "10000" and exp_count == exp_count_config - 1:
-				break
-
 			for encrypted_json_count_item in encrypted_json_count:
-				if exp_count == 0:
+				if encrypted_json_count_item not in record[decrypt_method][encrypted_json_folder_item]:
 					record[decrypt_method][encrypted_json_folder_item][encrypted_json_count_item] = {}
 				for sample_no in range(1,sample_count_config + 1):
 					#record等の設定
-					if exp_count == 0:
+					if str(sample_no) not in record[decrypt_method][encrypted_json_folder_item][encrypted_json_count_item]:
 						record[decrypt_method][encrypted_json_folder_item][encrypted_json_count_item][str(sample_no)] = []
 					encrypted_json_name = "./data/encrypted_data/" + decrypt_method+ "_encry/" + encrypted_json_folder_item + "/" + encrypted_json_count_item + "p_" + encrypted_json_folder_item + "_" + str(sample_no) + ".json"
 					decrypted_json_name = "./data/decrypted_data/" + decrypt_method+ "_encry/" + encrypted_json_folder_item + "/" + encrypted_json_count_item + "p_" + encrypted_json_folder_item + "_" + str(sample_no) + ".json"
@@ -628,25 +626,24 @@ def caluculate_test(caluculate_method, encrypt_method):
 
 
 	record["title"] = encrypt_method + "_" + caluculate_method + "100kaigoukei-500database"
-	encrypted_json_folder = ["3.2","5.2", "7.2", "9.2"]
+	encrypted_json_folder = ["3.2","5.2","7.2","9.2"]
 	# caluculation_count = ["10", "50", "100", "300", "500"]	
-	caluculation_count = ["100"]
+	caluculation_count = ["200", "300", "400"]
 	exp_count_config = 1
 	sample_count_config = 3
 	caluculation_repeat = 100
-	overwrite_flag = True
 	for exp_count in range(exp_count_config):
-		if exp_count == 0 and overwrite_flag:
+		if encrypt_method not in record:
 			record[encrypt_method] = {}
 		for encrypted_json_folder_item in encrypted_json_folder:
-			if exp_count == 0 and overwrite_flag:
+			if encrypted_json_folder_item not in record[encrypt_method]:
 				record[encrypt_method][encrypted_json_folder_item] = {}
 			for caluculation_count_item in caluculation_count:
-				if exp_count == 0:
+				if caluculation_count_item not in record[encrypt_method][encrypted_json_folder_item]:
 					record[encrypt_method][encrypted_json_folder_item][caluculation_count_item] = {}
 				for sample_no in range(1,sample_count_config + 1):
 					#record等の設定
-					if exp_count == 0:
+					if str(sample_no) not in record[encrypt_method][encrypted_json_folder_item][caluculation_count_item]:
 						record[encrypt_method][encrypted_json_folder_item][caluculation_count_item][str(sample_no)] = []	
 					
 					encrypted_json_name = "./data/encrypted_data/" + encrypt_method+ "_encry/" + encrypted_json_folder_item + "/500p_" + encrypted_json_folder_item + "_1.json"
@@ -687,12 +684,6 @@ def caluculate_test(caluculate_method, encrypt_method):
 
 
 
-					
-
-
-
-
-
 def main():
 
 	# # insert json old
@@ -725,12 +716,15 @@ def main():
 
 
 	# #caluculate json
-	# json_name = sys.argv[1]
-	# collection_name = sys.argv[2]
-
+	# json_name = "./data/encrypted_data/add_encry/9.2/100p_9.2_1.json"
+	# collection_name = "test"
 	# result = insert_data(json_name,collection_name)
 	# answer = caluculate_data(result, collection_name)
-	# print(answer)
+	# plain_json_name = "./data/plain_data/9.2/100p_9.2_1.json"
+	# json_file = open(plain_json_name, "r")
+	# plain_json_data = json.load(json_file)
+	# plain_answer = statistics.pvariance(plain_json_data)
+	# print(answer, plain_answer)
 
 
 	# #one計算only
@@ -748,10 +742,11 @@ def main():
 
 	#TEST
 	# JSONの暗号化＋書き込み
-	# encry_test("add")
-	# encry_test("full")
+	encry_test("add")
+	encry_test("full")
 
 	# # JSONの復号化＋書き込み
+	# decry_test("add")
 	# decry_test("full")
 
 	# # 命令文を作る
@@ -777,12 +772,12 @@ def main():
 
 
 	#単体計算テスト
-	caluculate_test("sum", "add")
-	caluculate_test("sum", "full")
-	caluculate_test("average", "add")
-	caluculate_test("average", "full")
-	caluculate_test("stdev", "add")
-	caluculate_test("stdev", "full")
+	# caluculate_test("sum", "add")
+	# caluculate_test("sum", "full")
+	# caluculate_test("average", "add")
+	# caluculate_test("average", "full")
+	# caluculate_test("stdev", "add")
+	# caluculate_test("stdev", "full")
 	
 
 

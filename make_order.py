@@ -59,17 +59,20 @@ def make_calc_change_order(order_num, first_list_long, collection_name, calc_met
 def write_calc_simple_order():
 	first_list_long = 500
 	calc_method = ["sum", "average", "stdev"]
-	caluculation_count = ["10", "50", "100", "300", "500"]
+	caluculation_count = ["10", "30", "50", "70", "100"]
+	db_size = ["100", "200", "300", "400"]
 	caluculation_repeat = 100
 	sample_count_config = 3
+	
 	for calc_method_item in calc_method:
-		for caluculation_count_item in caluculation_count:
-			for sample_no in range(1, sample_count_config + 1):
-				order_file = "./order/" + calc_method_item + "/" + caluculation_count_item + "_db500_*"+ str(caluculation_repeat) + "_" + str(sample_no) + ".json"
-				order = make_calc_change_order(caluculation_repeat, 500, "test", calc_method_item, int(caluculation_count_item))
+		for db_size_item in db_size:
+			for caluculation_count_item in caluculation_count:
+				for sample_no in range(1, sample_count_config + 1):
+					order_file = "./order/" + calc_method_item + "/db" + db_size_item + "/" + caluculation_count_item + "_db" + db_size_item + "_*"+ str(caluculation_repeat) + "_" + str(sample_no) + ".json"
+					order = make_calc_change_order(caluculation_repeat, int(db_size_item), "test", calc_method_item, int(caluculation_count_item))
 
-				with open(order_file, "w") as f:
-					json.dump(order, f, indent = 4)
+					with open(order_file, "w") as f:
+						json.dump(order, f, indent = 4)
 
 
 
