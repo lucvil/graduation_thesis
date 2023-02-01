@@ -629,8 +629,9 @@ def caluculate_test(caluculate_method, encrypt_method):
 
 	record["title"] = encrypt_method + "_" + caluculate_method + "100kaigoukei-500database"
 	encrypted_json_folder = ["3.2","5.2", "7.2", "9.2"]
-	caluculation_count = ["10", "50", "100", "300", "500"]	
-	exp_count_config = 3
+	# caluculation_count = ["10", "50", "100", "300", "500"]	
+	caluculation_count = ["100"]
+	exp_count_config = 1
 	sample_count_config = 3
 	caluculation_repeat = 100
 	overwrite_flag = True
@@ -654,15 +655,18 @@ def caluculate_test(caluculate_method, encrypt_method):
 					order_file = open(order_file_name,'r')
 					order_list = json.load(order_file)
 
+					result_encry = []
+					result_plain = []
+
 
 					time_sta = time.time()
 					for i in range(caluculation_repeat):
 						if encrypt_method == "add":
 							result_item = calc_change_add_encry(order_list[i][0], order_list[i][1], order_list[i][2], encrypted_json_name)
-							result_item = add_encrypt.add_decrypt_one(result_item)
+							result_item = add_encrypt.add_decrypt_one(result_item,"add_test")
 						elif encrypt_method == "full":
 							result_item = calc_change_full_encry(order_list[i][0], order_list[i][1], order_list[i][2], encrypted_json_name)
-							result_item = full_encrypt.full_decrypt_one(result_item)
+							result_item = full_encrypt.full_decrypt_one(result_item, "full_test")
 						else:
 							print("not match caluculate_method")
 						
@@ -672,7 +676,7 @@ def caluculate_test(caluculate_method, encrypt_method):
 					elapsed_time = time_end - time_sta
 					record[encrypt_method][encrypted_json_folder_item][caluculation_count_item][str(sample_no)].append(elapsed_time)
 					
-					caluculated_json_name = "./data/"+ caluculate_method +"_data/" + encrypt_method+ "_encry/" + encrypted_json_folder_item + "/500p_" + encrypted_json_folder_item + "_1_"+ str(sample_no) +".json"
+					caluculated_json_name = "./data/"+ caluculate_method +"_data/" + encrypt_method+ "_encry/" + encrypted_json_folder_item + "/"+ caluculation_count_item +"_db500_" + encrypted_json_folder_item + "_1_"+ str(sample_no) +".json"
 					with open(caluculated_json_name, "w") as f:
 						json.dump(result_encry, f, indent = 4)
 
@@ -774,6 +778,11 @@ def main():
 
 	#単体計算テスト
 	caluculate_test("sum", "add")
+	caluculate_test("sum", "full")
+	caluculate_test("average", "add")
+	caluculate_test("average", "full")
+	caluculate_test("stdev", "add")
+	caluculate_test("stdev", "full")
 	
 
 
