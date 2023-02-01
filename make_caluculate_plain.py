@@ -7,8 +7,8 @@ def randomfloat(n):
 	return random.uniform(0, 10**n)
 
 
-sample_count = [600, 700, 800, 900]
-sample_digit = [5]
+sample_count = [500]
+sample_digit = [3,7,9]
 for sample_digit_item in sample_digit:
     for sample_count_item in sample_count:
         for j in range(3):

@@ -504,7 +504,6 @@ def make_calc_change_order(order_num, first_list_long, collection_name):
 # 暗号化テスト
 def encry_test(encrypt_method):
 
-	##record_josn_nameを毎回変えること
 	record_json_name = "./record/encry/" + encrypt_method + "_encry/" + encrypt_method + "_encry_record.json"
 
 	record_file = open(record_json_name,'r')
@@ -512,10 +511,10 @@ def encry_test(encrypt_method):
 
 	record["title"] = encrypt_method + "_encryption"
 
-	plain_json_folder = ["3.2","5.2","7.2","9.2"]
+	plain_json_folder = ["3.2","5.2", "7.2","9.2"]
 	plain_json_count = ["500"]
-	exp_count_config = 2
-	sample_count_config = 2
+	exp_count_config = 3
+	sample_count_config = 3
 	overwrite_flag = False
 	for exp_count in range(exp_count_config):
 		if exp_count == 0 and overwrite_flag:
@@ -543,7 +542,12 @@ def encry_test(encrypt_method):
 					# 時間を計測
 					time_sta = time.time()
 					# add と full　で下の関数を変える
-					add_insert_encrypted_data(plain_json_name, encrypted_json_name)
+					if encrypt_method == "add":
+						add_insert_encrypted_data(plain_json_name, encrypted_json_name)
+					elif encrypt_method == "full":
+						full_insert_encrypted_data(plain_json_name, encrypted_json_name)
+					else:
+						print("not match encrypt_method")
 					time_end = time.time()
 					elapsed_time = time_end - time_sta
 					record[encrypt_method][plain_json_folder_item][plain_json_count_item][str(sample_no)].append(elapsed_time)
@@ -598,7 +602,12 @@ def decry_test(decrypt_method):
 					# 時間を計測
 					time_sta = time.time()
 					# add と　full　をここでかえる
-					full_insert_decrypted_data(encrypted_json_name, decrypted_json_name)
+					if decrypt_method == "add":
+						add_insert_decrypted_data(encrypted_json_name, decrypted_json_name)
+					elif decrypt_method == "full":
+						full_insert_decrypted_data(encrypted_json_name, decrypted_json_name)
+					else:
+						print("not match decrypt_method")
 					time_end = time.time()
 					elapsed_time = time_end - time_sta
 					record[decrypt_method][encrypted_json_folder_item][encrypted_json_count_item][str(sample_no)].append(elapsed_time)
@@ -639,24 +648,38 @@ def caluculate_test(caluculate_method, encrypt_method):
 					if exp_count == 0:
 						record[encrypt_method][encrypted_json_folder_item][caluculation_count_item][str(sample_no)] = []	
 					
-					encrypted_json_name = "./data/encrypted_data/" + encrypt_method+ "_encry/" + encrypted_json_folder_item + "/500p_" + encrypted_json_folder_item + "_" + str(sample_no) + ".json"
-					order_file_name = "order/" + caluculate_method + "/" + caluculation_count + "_db500_*"+ caluculation_repeat + "_" + str(sample_no) + ".json"
+					encrypted_json_name = "./data/encrypted_data/" + encrypt_method+ "_encry/" + encrypted_json_folder_item + "/500p_" + encrypted_json_folder_item + "_1.json"
+					order_file_name = "order/" + caluculate_method + "/" + caluculation_count_item + "_db500_*"+ str(caluculation_repeat) + "_" + str(sample_no) + ".json"
+
 					order_file = open(order_file_name,'r')
 					order_list = json.load(order_file)
 
 
-
+					time_sta = time.time()
 					for i in range(caluculation_repeat):
-						if caluculate_method == "add":
+						if encrypt_method == "add":
 							result_item = calc_change_add_encry(order_list[i][0], order_list[i][1], order_list[i][2], encrypted_json_name)
-						elif caluculate_method == "full":
+							result_item = add_encrypt.add_decrypt_one(result_item)
+						elif encrypt_method == "full":
 							result_item = calc_change_full_encry(order_list[i][0], order_list[i][1], order_list[i][2], encrypted_json_name)
+							result_item = full_encrypt.full_decrypt_one(result_item)
 						else:
 							print("not match caluculate_method")
 						
-						result.append(result_item)
+						
+						result_encry.append(result_item)
+					time_end = time.time()
+					elapsed_time = time_end - time_sta
+					record[encrypt_method][encrypted_json_folder_item][caluculation_count_item][str(sample_no)].append(elapsed_time)
+					
+					caluculated_json_name = "./data/"+ caluculate_method +"_data/" + encrypt_method+ "_encry/" + encrypted_json_folder_item + "/500p_" + encrypted_json_folder_item + "_1_"+ str(sample_no) +".json"
+					with open(caluculated_json_name, "w") as f:
+						json.dump(result_encry, f, indent = 4)
 
-	print(result)
+
+					with open(record_json_name, "w") as f:
+						json.dump(record, f, indent = 4)
+
 
 
 
@@ -720,11 +743,12 @@ def main():
 	
 
 	#TEST
-	# # JSONの暗号化＋書き込み
+	# JSONの暗号化＋書き込み
+	# encry_test("add")
 	# encry_test("full")
 
 	# # JSONの復号化＋書き込み
-	decry_test("full")
+	# decry_test("full")
 
 	# # 命令文を作る
 	# order_list = make_calc_change_order(100,100, "test")
@@ -747,6 +771,9 @@ def main():
 	# 	}
 	# 	json.dump(time_result, f, indent = 4)	
 
+
+	#単体計算テスト
+	caluculate_test("sum", "add")
 	
 
 
