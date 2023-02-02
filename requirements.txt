@@ -4,6 +4,7 @@ phe
 numpy
 
 pymongo
-
+matplotlib
+japanize-matplotlib
 
 ###### Requirements with Version Specifiers ######`

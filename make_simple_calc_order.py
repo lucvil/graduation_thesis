@@ -31,27 +31,27 @@ def make_calc_change_order(order_num, first_list_long, collection_name, calc_met
 			calc_index_list = random.sample(range(db_list_long), k=calc_long)
 			order_item = [calc_index_list, calc_kind, collection_name, i, change_stage]
 			order_list.append(order_item)
-		elif calc_kind == "add":
-			# データ追加
-			add_long = 10
-			# float型の要素を持つlistに直す
-			add_plain_list =  [randomfloat(3) for i in range(add_long)]
-			change_stage += 1
-			order_item = [add_plain_list, calc_kind, collection_name, i, change_stage]
-			db_list_long += add_long
-			order_list.append(order_item)
-			if len(order_list) >= 2:
-				order_list[-2][4] += 0.5
-		elif calc_kind == "delete":
-			#データ削除
-			delete_long = 10
-			delete_index_list = random.sample(range(db_list_long), k=delete_long)
-			change_stage += 1
-			order_item = [delete_index_list, calc_kind, collection_name, i, change_stage]
-			db_list_long -= delete_long
-			order_list.append(order_item)
-			if len(order_list) >= 2:
-				order_list[-2][4] += 0.5
+		# elif calc_kind == "add":
+		# 	# データ追加
+		# 	add_long = 10
+		# 	# float型の要素を持つlistに直す
+		# 	add_plain_list =  [randomfloat(3) for i in range(add_long)]
+		# 	change_stage += 1
+		# 	order_item = [add_plain_list, calc_kind, collection_name, i, change_stage]
+		# 	db_list_long += add_long
+		# 	order_list.append(order_item)
+		# 	if len(order_list) >= 2:
+		# 		order_list[-2][4] += 0.5
+		# elif calc_kind == "delete":
+		# 	#データ削除
+		# 	delete_long = 10
+		# 	delete_index_list = random.sample(range(db_list_long), k=delete_long)
+		# 	change_stage += 1
+		# 	order_item = [delete_index_list, calc_kind, collection_name, i, change_stage]
+		# 	db_list_long -= delete_long
+		# 	order_list.append(order_item)
+		# 	if len(order_list) >= 2:
+		# 		order_list[-2][4] += 0.5
 
 			
 	return order_list
@@ -60,8 +60,8 @@ def write_calc_simple_order():
 	first_list_long = 500
 	calc_method = ["sum", "average", "stdev"]
 	caluculation_count = ["10", "30", "50", "70", "100"]
-	db_size = ["100", "200", "300", "400"]
-	caluculation_repeat = 100
+	db_size = ["100", "200", "300", "400", "500"]
+	caluculation_repeat = 20
 	sample_count_config = 3
 	
 	for calc_method_item in calc_method:

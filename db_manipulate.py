@@ -513,9 +513,9 @@ def encry_test(encrypt_method):
 
 	record["title"] = encrypt_method + "_encryption"
 
-	plain_json_folder = ["5.2"]
-	plain_json_count = ["200", "300", "400"]
-	exp_count_config = 2
+	plain_json_folder = ["3.2", "5.2", "7.2", "9.2"]
+	plain_json_count = ["300"]
+	exp_count_config = 1
 	sample_count_config = 1
 	overwrite_flag = False
 	for exp_count in range(exp_count_config):
@@ -617,7 +617,6 @@ def decry_test(decrypt_method):
 #　計算後にデータベースが変わってしまう問題
 # 計算テスト
 def caluculate_test(caluculate_method, encrypt_method):
-	##record_josn_nameを毎回変えること
 	record_json_name = "./record/" + caluculate_method + "/" + encrypt_method + "_encry/" + encrypt_method + "_" + caluculate_method + "_record.json"
 	record_file = open(record_json_name,'r')
 	record = json.load(record_file)	
@@ -625,61 +624,67 @@ def caluculate_test(caluculate_method, encrypt_method):
 	result_plain = []
 
 
-	record["title"] = encrypt_method + "_" + caluculate_method + "100kaigoukei-500database"
-	encrypted_json_folder = ["3.2","5.2","7.2","9.2"]
-	# caluculation_count = ["10", "50", "100", "300", "500"]	
-	caluculation_count = ["200", "300", "400"]
+	record["title"] = encrypt_method + "_" + caluculate_method + "20kaigoukei"
+	# encrypted_json_folder = ["3.2","5.2","7.2","9.2"]
+	encrypted_json_folder = ["5.2"]
+	# caluculation_count = ["10", "30", "50", "70", "100"]	
+	caluculation_count = ["50"]
+	# db_size = ["db100", "db200", "db300", "db400", "db500"]
+	db_size = ["db300"]
 	exp_count_config = 1
-	sample_count_config = 3
-	caluculation_repeat = 100
+	sample_count_config = 1
+	caluculation_repeat = 20
 	for exp_count in range(exp_count_config):
 		if encrypt_method not in record:
 			record[encrypt_method] = {}
-		for encrypted_json_folder_item in encrypted_json_folder:
-			if encrypted_json_folder_item not in record[encrypt_method]:
-				record[encrypt_method][encrypted_json_folder_item] = {}
-			for caluculation_count_item in caluculation_count:
-				if caluculation_count_item not in record[encrypt_method][encrypted_json_folder_item]:
-					record[encrypt_method][encrypted_json_folder_item][caluculation_count_item] = {}
-				for sample_no in range(1,sample_count_config + 1):
-					#record等の設定
-					if str(sample_no) not in record[encrypt_method][encrypted_json_folder_item][caluculation_count_item]:
-						record[encrypt_method][encrypted_json_folder_item][caluculation_count_item][str(sample_no)] = []	
-					
-					encrypted_json_name = "./data/encrypted_data/" + encrypt_method+ "_encry/" + encrypted_json_folder_item + "/500p_" + encrypted_json_folder_item + "_1.json"
-					order_file_name = "order/" + caluculate_method + "/" + caluculation_count_item + "_db500_*"+ str(caluculation_repeat) + "_" + str(sample_no) + ".json"
-
-					order_file = open(order_file_name,'r')
-					order_list = json.load(order_file)
-
-					result_encry = []
-					result_plain = []
-
-
-					time_sta = time.time()
-					for i in range(caluculation_repeat):
-						if encrypt_method == "add":
-							result_item = calc_change_add_encry(order_list[i][0], order_list[i][1], order_list[i][2], encrypted_json_name)
-							result_item = add_encrypt.add_decrypt_one(result_item,"add_test")
-						elif encrypt_method == "full":
-							result_item = calc_change_full_encry(order_list[i][0], order_list[i][1], order_list[i][2], encrypted_json_name)
-							result_item = full_encrypt.full_decrypt_one(result_item, "full_test")
-						else:
-							print("not match caluculate_method")
+		for db_size_item in db_size:
+			if db_size_item not in record[encrypt_method]:
+				record[encrypt_method][db_size_item] = {}
+			for encrypted_json_folder_item in encrypted_json_folder:
+				if encrypted_json_folder_item not in record[encrypt_method][db_size_item]:
+					record[encrypt_method][db_size_item][encrypted_json_folder_item] = {}
+				for caluculation_count_item in caluculation_count:
+					if caluculation_count_item not in record[encrypt_method][db_size_item][encrypted_json_folder_item]:
+						record[encrypt_method][db_size_item][encrypted_json_folder_item][caluculation_count_item] = {}
+					for sample_no in range(1,sample_count_config + 1):
+						#record等の設定
+						if str(sample_no) not in record[encrypt_method][db_size_item][encrypted_json_folder_item][caluculation_count_item]:
+							record[encrypt_method][db_size_item][encrypted_json_folder_item][caluculation_count_item][str(sample_no)] = []	
 						
+						encrypted_json_name = "./data/encrypted_data/" + encrypt_method+ "_encry/" + encrypted_json_folder_item + "/" + db_size_item[2:] + "p_" + encrypted_json_folder_item + "_1.json"
+						order_file_name = "order/" + caluculate_method + "/" + db_size_item + "/"+ caluculation_count_item + "_" + db_size_item + "_*"+ str(caluculation_repeat) + "_" + str(sample_no) + ".json"
+
+						order_file = open(order_file_name,'r')
+						order_list = json.load(order_file)
+
+						result_encry = []
+						result_plain = []
+
+
+						time_sta = time.time()
+						for i in range(caluculation_repeat):
+							if encrypt_method == "add":
+								result_item = calc_change_add_encry(order_list[i][0], order_list[i][1], order_list[i][2], encrypted_json_name)
+								result_item = add_encrypt.add_decrypt_one(result_item,"add_test")
+							elif encrypt_method == "full":
+								result_item = calc_change_full_encry(order_list[i][0], order_list[i][1], order_list[i][2], encrypted_json_name)
+								result_item = full_encrypt.full_decrypt_one(result_item, "full_test")
+							else:
+								print("not match caluculate_method")
+							
+							
+							result_encry.append(result_item)
+						time_end = time.time()
+						elapsed_time = time_end - time_sta
+						record[encrypt_method][db_size_item][encrypted_json_folder_item][caluculation_count_item][str(sample_no)].append(elapsed_time)
 						
-						result_encry.append(result_item)
-					time_end = time.time()
-					elapsed_time = time_end - time_sta
-					record[encrypt_method][encrypted_json_folder_item][caluculation_count_item][str(sample_no)].append(elapsed_time)
-					
-					caluculated_json_name = "./data/"+ caluculate_method +"_data/" + encrypt_method+ "_encry/" + encrypted_json_folder_item + "/"+ caluculation_count_item +"_db500_" + encrypted_json_folder_item + "_1_"+ str(sample_no) +".json"
-					with open(caluculated_json_name, "w") as f:
-						json.dump(result_encry, f, indent = 4)
+						caluculated_json_name = "./data/"+ caluculate_method +"_data/" + encrypt_method+ "_encry/" + encrypted_json_folder_item + "/"+ caluculation_count_item +"_" + db_size_item + "*" + str(caluculation_repeat) + "_" + encrypted_json_folder_item + "_1_"+ str(sample_no) +".json"
+						with open(caluculated_json_name, "w") as f:
+							json.dump(result_encry, f, indent = 4)
 
 
-					with open(record_json_name, "w") as f:
-						json.dump(record, f, indent = 4)
+						with open(record_json_name, "w") as f:
+							json.dump(record, f, indent = 4)
 
 
 
@@ -742,8 +747,8 @@ def main():
 
 	#TEST
 	# JSONの暗号化＋書き込み
-	encry_test("add")
-	encry_test("full")
+	# encry_test("add")
+	# encry_test("full")
 
 	# # JSONの復号化＋書き込み
 	# decry_test("add")
@@ -774,10 +779,8 @@ def main():
 	#単体計算テスト
 	# caluculate_test("sum", "add")
 	# caluculate_test("sum", "full")
-	# caluculate_test("average", "add")
-	# caluculate_test("average", "full")
 	# caluculate_test("stdev", "add")
-	# caluculate_test("stdev", "full")
+	caluculate_test("stdev", "full")
 	
 
 
