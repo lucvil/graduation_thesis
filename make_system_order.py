@@ -9,20 +9,106 @@ def randomfloat(n):
 	answer = random.uniform(0, 10**n)
 	#小数点第2位以下で四捨五入
 	answer = float(np.round(answer, decimals=answer_decimals))
+
 	return answer
 
+def make_bias_order_seed(change_order_ratio, order_num, bias_group_size):
+	change_order_list = []
+	calc_order_list = []
+	change_order_num = int(order_num * change_order_ratio)
+	calc_order_num = order_num - int(order_num * change_order_ratio)
+
+	for i in range(change_order_num):
+		if i % 2 == 0:
+			change_order_list.append("add")
+		else:
+			change_order_list.append("delete")
+	
+	for i in range(calc_order_num):
+		if i % 2 == 0:
+			calc_order_list.append("stdev")
+		elif i % 4 == 1:
+			calc_order_list.append("sum")
+		else:
+			calc_order_list.append("average")
+
+	
+	order_kind_list = []
+	now_calc_index = 0
+	now_change_index = 0
+	for i in range(order_num):
+		if i % bias_group_size < int(bias_group_size -  bias_group_size * change_order_ratio):
+			order_kind_list.append(calc_order_list[now_calc_index])
+			now_calc_index += 1
+		else:
+			order_kind_list.append(change_order_list[now_change_index])
+			now_change_index += 1
+	
+	if now_calc_index != calc_order_num or now_change_index != change_order_num:
+		print("error")
+
+	return order_kind_list
+
+def make_even_order_seed(change_order_ratio, order_num):
+	change_order_list = []
+	calc_order_list = []
+	change_order_num = int(order_num * change_order_ratio)
+	calc_order_num = order_num - int(order_num * change_order_ratio)
+
+	for i in range(change_order_num):
+		if i % 2 == 0:
+			change_order_list.append("add")
+		else:
+			change_order_list.append("delete")
+	
+	for i in range(calc_order_num):
+		if i % 2 == 0:
+			calc_order_list.append("stdev")
+		elif i % 4 == 1:
+			calc_order_list.append("sum")
+		else:
+			calc_order_list.append("average")
+
+	
+	order_kind_list = []
+	now_calc_index = 0
+	now_change_index = 0
+	for i in range(order_num):
+		if i % 10 < int(10 - 10 * change_order_ratio):
+			order_kind_list.append(calc_order_list[now_calc_index])
+			now_calc_index += 1
+		else:
+			order_kind_list.append(change_order_list[now_change_index])
+			now_change_index += 1
+	
+	if now_calc_index != calc_order_num or now_change_index != change_order_num:
+		print("error")
+	
+	return order_kind_list
+
+
+
+
+
+
 # 計算命令とデータの作成・削除命令をランダム生成する
-def make_calc_change_order(order_num, first_list_long, collection_name, calc_method, caluculation_count):
+def make_calc_change_order(order_num, first_list_long, collection_name, caluculation_count, change_order_ratio ,bias_method, bias_group_size):
 	order_list = []
 	db_list_long = first_list_long
 	change_stage = 0
 
+	# 命令種類決定
+	if bias_method == "even":
+		calc_kind_list = make_even_order_seed(change_order_ratio, order_num)
+	elif bias_method == "bias":
+		calc_kind_list = make_bias_order_seed(change_order_ratio, order_num, bias_group_size)
+
 	#命令生成
 	for i in range(order_num):
-
+		
 
 		# calc_kind = np.random.choice(["sum", "average", "stdev", "add", "delete"], p=[0.266, 0.266, 0.268, 0.1, 0.1])
-		calc_kind = calc_method
+		calc_kind = calc_kind_list[i]
 
 		if calc_kind == "sum" or calc_kind == "average" or calc_kind == "stdev":
 			# データ計算
@@ -35,7 +121,7 @@ def make_calc_change_order(order_num, first_list_long, collection_name, calc_met
 			# データ追加
 			add_long = 30
 			# float型の要素を持つlistに直す
-			add_plain_list =  [randomfloat(3) for i in range(add_long)]
+			add_plain_list =  [randomfloat(5) for i in range(add_long)]
 			change_stage += 1
 			order_item = [add_plain_list, calc_kind, collection_name, i, change_stage]
 			db_list_long += add_long
@@ -58,26 +144,32 @@ def make_calc_change_order(order_num, first_list_long, collection_name, calc_met
 
 def write_calc_simple_order():
 
-	calc_method = ["sum", "average", "stdev"]
-	caluculation_count = ["10", "30", "50", "70", "100"]
-	db_size = ["100", "200", "300", "400", "500"]
-	order_num = 20
+	caluculation_count = ["100"]
+	db_size = ["300"]
+	order_num = 300
 	sample_count_config = 3
+	bias_method = ["even", "bias"]
+	change_order_ratio = [0, 0.2, 0.4, 0.6, 0.8, 1]
+	bias_group_size = 100
 	
-	for calc_method_item in calc_method:
+
+	for bias_method_item in bias_method:
 		for db_size_item in db_size:
 			for caluculation_count_item in caluculation_count:
-				for sample_no in range(1, sample_count_config + 1):
-					order_file = "./order/" + calc_method_item + "/db" + db_size_item + "/" + caluculation_count_item + "_db" + db_size_item + "_*"+ str(caluculation_repeat) + "_" + str(sample_no) + ".json"
-					order = make_calc_change_order(order_num, int(db_size_item), "test", calc_method_item, int(caluculation_count_item))
+				for change_order_ratio_item in change_order_ratio:
+					for sample_no in range(1, sample_count_config + 1):
+						order_file = "./order/system/" + bias_method_item + "/db" + db_size_item + "/db" + db_size_item + "_*"+ str(order_num) + "_" + str(change_order_ratio_item) + "_" + str(sample_no) + ".json"
+						order = make_calc_change_order(order_num, int(db_size_item), "test", int(caluculation_count_item), change_order_ratio_item, bias_method_item, bias_group_size)
 
-					with open(order_file, "w") as f:
-						json.dump(order, f, indent = 4)
+						with open(order_file, "w") as f:
+							json.dump(order, f, indent = 4)
 
 
 
 def main():
 	write_calc_simple_order()
+	# make_even_order_seed(0.2, 100)
+	# make_bias_order_seed(0.2, 100, 50)
 
 
 if __name__ == '__main__':

@@ -337,12 +337,21 @@ def caluculate_both_encry(calc_index_list, method, collection_name):
 	return plain_answer
 
 
+
+
+
+
 # order_listに従って上記の三つにデータを流す
-def do_order_list_add_or_full(calc_func, order_list, multiprocess_result_list, db_file_place):
+def do_order_list_add_or_full(calc_func, order_list, multiprocess_result_list, db_file_place, time_list):
+	time_sta = time.time()
+
 	for order_list_item in order_list:
 		answer_item = calc_func(order_list_item[0], order_list_item[1], order_list_item[2], db_file_place)
 		multiprocess_result_list.append([answer_item, order_list_item[3]])
-	
+
+	time_end = time.time()
+	elapsed_time = time_end - time_sta
+	time_list.append(elapsed_time)
 	return 1
 
 
@@ -365,29 +374,26 @@ def parallel_distribute_order_do_add_full(order_list, add_db_file_place, full_db
 	#async, threadingm, multiprocessing の三種類があるが、今回は並列処理のmultiprocessingを用いる
 	manager = multiprocessing.Manager()
 	multiprocess_result_list = manager.list()
-	add_process = Process(target=do_order_list_add_or_full, args=(calc_change_add_encry, add_order_list, multiprocess_result_list, add_db_file_place,))
-	full_process = Process(target=do_order_list_add_or_full, args=(calc_change_full_encry, full_order_list, multiprocess_result_list, full_db_file_place,))
+	add_time = manager.list()
+	full_time = manager.list()
+	add_process = Process(target=do_order_list_add_or_full, args=(calc_change_add_encry, add_order_list, multiprocess_result_list, add_db_file_place,add_time,))
+	full_process = Process(target=do_order_list_add_or_full, args=(calc_change_full_encry, full_order_list, multiprocess_result_list, full_db_file_place,full_time,))
 	
-	# time_sta = time.perf_counter()
+
 	add_process.start()
 	full_process.start()
 	add_process.join()
-	# time_end = time.perf_counter()
-	# with open("time.json", "w") as f:
-	# 	time_result = {
-	# 		"add_encry_time": time_end - time_sta
-	# 	}
-	# 	json.dump(time_result, f, indent = 4)
-	
 	full_process.join()
 
 	print(multiprocess_result_list)
-	return multiprocess_result_list
+	return multiprocess_result_list, add_time, full_time
 
 
 
 #order_listに従って上記の完全準同型にデータを流す
-def do_order_list_full_only(calc_func, order_list, multiprocess_result_list, multiprocess_change_stage, db_file_place):
+def do_order_list_full_only(calc_func, order_list, multiprocess_result_list, multiprocess_change_stage, db_file_place, time_list):
+	time_sta = time.time()
+
 	for order_list_item in order_list:
 		# 要追加実装
 		if order_list_item[1] == "add" or order_list_item[1] == "delete":
@@ -403,6 +409,10 @@ def do_order_list_full_only(calc_func, order_list, multiprocess_result_list, mul
 			multiprocess_result_list.append([answer_item, order_list_item[3]])
 			if multiprocess_change_stage.value < order_list_item[4]:
 				multiprocess_change_stage.value = order_list_item[4]			
+	
+	time_end = time.time()
+	elapsed_time = time_end - time_sta
+	time_list.append(elapsed_time)
 
 	return 1
 
@@ -424,12 +434,14 @@ def parallel_distribute_order_do_full_only(order_list, full_db_file_place):
 	# #fullのみで
 	manager = multiprocessing.Manager()
 	multiprocess_result_list = manager.list()
+	full_time1 = manager.list()
+	full_time2 = manager.list()
 	if order_list[0][1] == "add" or order_list[0][1] == "delete":
 		change_stage = Value("d", 0.5)
 	else:
 		change_stage = Value("d", 0.0)
-	full_process_1 = Process(target=do_order_list_full_only, args=(calc_change_full_encry, full_order_list_1,multiprocess_result_list, change_stage, full_db_file_place,))
-	full_process_2 = Process(target=do_order_list_full_only, args=(calc_change_full_encry, full_order_list_2,multiprocess_result_list, change_stage, full_db_file_place,))
+	full_process_1 = Process(target=do_order_list_full_only, args=(calc_change_full_encry, full_order_list_1,multiprocess_result_list, change_stage, full_db_file_place, full_time1, ))
+	full_process_2 = Process(target=do_order_list_full_only, args=(calc_change_full_encry, full_order_list_2,multiprocess_result_list, change_stage, full_db_file_place, full_time2, ))
 	# 続き
 	full_process_1.start()
 	full_process_2.start()
@@ -437,7 +449,10 @@ def parallel_distribute_order_do_full_only(order_list, full_db_file_place):
 	full_process_2.join()
 
 	print(multiprocess_result_list)
-	return multiprocess_result_list
+	return multiprocess_result_list, full_time1, full_time2
+
+
+
 
 
 # 計算命令のみをランダム生成する
@@ -574,7 +589,6 @@ def decry_test(decrypt_method):
 	encrypted_json_count = ["200", "300", "400"]
 	exp_count_config = 2
 	sample_count_config = 1
-	overwrite_flag = False
 	for exp_count in range(exp_count_config):
 		if decrypt_method not in record:
 			record[decrypt_method] = {}
@@ -686,6 +700,91 @@ def caluculate_test(caluculate_method, encrypt_method):
 						with open(record_json_name, "w") as f:
 							json.dump(record, f, indent = 4)
 
+def system_test(system_method):
+	
+	record_json_name = "./record/system/" + system_method + "/" + system_method+ "_record.json"
+
+	record_file = open(record_json_name,'r')
+	record = json.load(record_file)
+
+	record["title"] = system_method
+
+	encrypted_json_folder = "5.2"
+	db_size = ["db300"]
+	order_count = ["300"]
+	change_order_ratio_config = ["0", "0.2", "0.4", "0.6", "0.8", "1.0"]
+	bias_size = 100
+	exp_count_config = 2
+	sample_count_config = 1
+	bias_method = ["even", "bias"]
+
+	for exp_count in range(exp_count_config):
+		if system_method not in record:
+			record[system_method] = {}
+		for  bias_method_item in bias_method:
+			if bias_method_item not in record[system_method]:
+				record[system_method][bias_method_item] = {}
+			for change_order_ratio_item in change_order_ratio_config:
+				if change_order_ratio_item not in record[system_method][bias_method_item]:
+					record[system_method][bias_method_item][change_order_ratio_item] = {}
+				for db_size_item in db_size:
+					if db_size_item not in record[system_method][bias_method_item][change_order_ratio_item]:
+						record[system_method][bias_method_item][change_order_ratio_item][db_size_item] = {}
+						for order_count_item in order_count:
+							if order_count_item not in record[system_method][bias_method_item][change_order_ratio_item][db_size_item]:
+								record[system_method][bias_method_item][change_order_ratio_item][db_size_item][order_count_item] = {}
+							for sample_no in range(1,sample_count_config + 1):
+								if sample_no not in record[system_method][bias_method_item][change_order_ratio_item][db_size_item][order_count_item]:
+									if system_method == "add_full":
+										record[system_method][bias_method_item][change_order_ratio_item][db_size_item][order_count_item][str(sample_no)] = {"add": [], "full" : []}
+									elif system_method == "full_only":
+										record[system_method][bias_method_item][change_order_ratio_item][db_size_item][order_count_item][str(sample_no)] = {"full_1": [], "full_2" : []}
+									else: 
+										print("not match system_method")
+									
+
+								#実験
+								add_encrypted_original_data_name = "./data/encrypted_data/add_encry/" + encrypted_json_folder + "/" + db_size_item[2:] + "p_" + encrypted_json_folder + "_1.json"
+								full_encrypted_original_data_name = "./data/encrypted_data/full_encry/" + encrypted_json_folder + "/" + db_size_item[2:] + "p_" + encrypted_json_folder + "_1.json"
+
+								add_exp_data_name = "./data/experimented_data/add_encry/" + encrypted_json_folder + "/" + db_size_item[2:] + "p_" + encrypted_json_folder + "_1.json"
+								full_exp_data_name = "./data/experimented_data/full_encry/" + encrypted_json_folder + "/" + db_size_item[2:] + "p_" + encrypted_json_folder + "_1.json"
+
+								## データの初期化
+								add_original_json = open(add_encrypted_original_data_name,'r')
+								add_original_json_data = json.load(add_original_json)
+								with open(add_exp_data_name, "w") as f:
+									json.dump(add_original_json_data, f, indent = 4)
+								full_original_json = open(full_encrypted_original_data_name,'r')
+								full_original_json_data = json.load(full_original_json)
+								with open(full_exp_data_name, "w") as f:
+									json.dump(full_original_json_data, f, indent = 4)
+
+								
+								order_file_name = order_file = "./order/system/" + bias_method_item + "/db" + db_size_item + "/db" + db_size_item + "_*"+ order_count_item + "_" + change_order_ratio_item + "_" + str(sample_no) + ".json"
+								order_file = open(order_file_name,'r')
+								order_list = json.load(order_file)
+
+
+								if system_method == "add_full":
+									result_list, time_add, time_full = parallel_distribute_order_do_add_full(order_list, add_exp_data_name, full_exp_data_name)
+									record[system_method][bias_method_item][change_order_ratio_item][db_size_item][order_count_item][str(sample_no)]["add"].append(time_add)
+									record[system_method][bias_method_item][change_order_ratio_item][db_size_item][order_count_item][str(sample_no)]["full"].append(time_full)
+								elif system_method == "full_only":
+									result_list, time_1, time_2 = parallel_distribute_order_do_full_only(order_list, full_exp_data_name)
+									record[system_method][bias_method_item][change_order_ratio_item][db_size_item][order_count_item][str(sample_no)]["full_1"].append(time_1)
+									record[system_method][bias_method_item][change_order_ratio_item][db_size_item][order_count_item][str(sample_no)]["full_2"].append(time_2)
+								else:
+									print("not match system method")
+								
+								result_json_name = "./system_result/" + system_method + "/" + "bias_method_item" + "/db" + db_size_item + "_*"+ order_count_item + "_" + change_order_ratio_item + "_" + str(sample_no) + ".json"
+								with open(result_json_name, "w") as f:
+									json.dump(result_list, f, indent = 4)
+
+
+								with open(record_json_name, "w") as f:
+									json.dump(record, f, indent = 4)
+
 
 
 
@@ -780,7 +879,10 @@ def main():
 	# caluculate_test("sum", "add")
 	# caluculate_test("sum", "full")
 	# caluculate_test("stdev", "add")
-	caluculate_test("stdev", "full")
+	# caluculate_test("stdev", "full")
+
+	# システムテスト
+	system_test("add_full")
 	
 
 
