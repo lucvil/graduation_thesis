@@ -630,8 +630,8 @@ def caluculate_test(caluculate_method, encrypt_method):
 	# caluculation_count = ["10", "30", "50", "70", "100"]	
 	caluculation_count = ["50"]
 	# db_size = ["db100", "db200", "db300", "db400", "db500"]
-	db_size = ["db300"]
-	exp_count_config = 1
+	db_size = ["db500"]
+	exp_count_config = 4
 	sample_count_config = 1
 	caluculation_repeat = 20
 	for exp_count in range(exp_count_config):
