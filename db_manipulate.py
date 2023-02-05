@@ -278,6 +278,44 @@ def calc_change_full_encry(calc_index_list, method, collection_name, db_file_pla
 	return full_plain_answer
 
 
+def calc_change_full_encry2(calc_index_list, method, collection_name, db_file_place):
+	full_collection_name = "full_" + collection_name
+
+	# jsonファイルの読み出し
+	json_file = open(db_file_place,'r')
+	full_encrypted_json_data = json.load(json_file)
+
+	#　今回はfull_encrypted_json_dataにリストが来るとして考える(実際はjson typeで来てその中から該当部分を検索しリスト化する工程が加わる)
+	if method != "add" and method != "delete":
+		full_encrypted_calc_list = [full_encrypted_json_data[i] for i in calc_index_list]
+
+
+	# 計算
+	if method == "sum":
+		full_encrypted_answer = full_encrypt.full_caluculate_sum(full_encrypted_calc_list,full_collection_name)
+	elif method == "average":
+		full_encrypted_answer = full_encrypt.full_caluculate_average(full_encrypted_calc_list, full_collection_name)
+	elif method == "stdev":
+		full_encrypted_answer = full_encrypt.full_caluculate_stdev(full_encrypted_calc_list,full_collection_name)
+	elif method == "add":
+		full_encrypted_json_data.extend(full_encrypt.full_encrypt_json(calc_index_list, full_collection_name))
+		with open(db_file_place, "w") as f:
+			json.dump(full_encrypted_json_data, f, indent = 4)
+	elif method == "delete":
+		full_encrypted_deleted_json_data = [full_encrypted_json_data[i] for i in range(len(full_encrypted_json_data)) if i not in calc_index_list]
+		with open(db_file_place, "w") as f:
+			json.dump(full_encrypted_deleted_json_data, f, indent = 4)			
+	else:
+		pass
+
+	# 実際はdecryptはuser側でやるべきだが、簡単のためここで行う
+	full_plain_answer = -1
+	if method != "add" and method != "delete":
+		full_plain_answer = full_encrypt.full_decrypt_one(full_encrypted_answer, full_collection_name)
+
+	return full_plain_answer
+
+
 # 加法・完全準同型暗号の両方を用いて計算
 # 今回は合計・平均は加法準同型を、分散は完全準同型を用いる
 # 外からdb_file_placeを変更できるようにしておくこと
@@ -354,6 +392,18 @@ def do_order_list_add_or_full(calc_func, order_list, multiprocess_result_list, d
 	time_list.append(elapsed_time)
 	return 1
 
+def do_order_list_add_or_full2(calc_func, order_list, multiprocess_result_list, db_file_place, time_list):
+	time_sta = time.time()
+
+	for order_list_item in order_list:
+		answer_item = calc_func(order_list_item[0], order_list_item[1], order_list_item[2], db_file_place)
+		multiprocess_result_list.append([answer_item, order_list_item[3]])
+
+	time_end = time.time()
+	elapsed_time = time_end - time_sta
+	time_list.append(elapsed_time)
+	return 1
+
 
 # 命令を加法と完全に振り分け並列処理する
 def parallel_distribute_order_do_add_full(order_list, add_db_file_place, full_db_file_place):
@@ -377,7 +427,7 @@ def parallel_distribute_order_do_add_full(order_list, add_db_file_place, full_db
 	add_time = manager.list()
 	full_time = manager.list()
 	add_process = Process(target=do_order_list_add_or_full, args=(calc_change_add_encry, add_order_list, multiprocess_result_list, add_db_file_place,add_time,))
-	full_process = Process(target=do_order_list_add_or_full, args=(calc_change_full_encry, full_order_list, multiprocess_result_list, full_db_file_place,full_time,))
+	full_process = Process(target=do_order_list_add_or_full2, args=(calc_change_full_encry, full_order_list, multiprocess_result_list, full_db_file_place,full_time,))
 	
 
 	add_process.start()
@@ -385,16 +435,49 @@ def parallel_distribute_order_do_add_full(order_list, add_db_file_place, full_db
 	add_process.join()
 	full_process.join()
 
-	print(multiprocess_result_list)
 	return multiprocess_result_list, add_time, full_time
 
 
 
 #order_listに従って上記の完全準同型にデータを流す
 def do_order_list_full_only(calc_func, order_list, multiprocess_result_list, multiprocess_change_stage, db_file_place, time_list):
+
 	time_sta = time.time()
 
 	for order_list_item in order_list:
+		# 要追加実装
+		print("start", order_list_item[3])
+		if order_list_item[1] == "add" or order_list_item[1] == "delete":
+			while multiprocess_change_stage.value != int(order_list_item[4]) - 0.5:
+
+				pass 
+			answer_item = calc_func(order_list_item[0], order_list_item[1], order_list_item[2], db_file_place)
+			multiprocess_result_list.append([answer_item, order_list_item[3]])
+			multiprocess_change_stage.value = order_list_item[4]
+		else:
+			while multiprocess_change_stage.value != int(order_list_item[4]) and multiprocess_change_stage.value != int(order_list_item[4]) + 0.5:
+				pass
+			answer_item = calc_func(order_list_item[0], order_list_item[1], order_list_item[2], db_file_place)
+			multiprocess_result_list.append([answer_item, order_list_item[3]])
+			if multiprocess_change_stage.value < order_list_item[4]:
+				multiprocess_change_stage.value = order_list_item[4]	
+
+	
+	time_end = time.time()
+	elapsed_time = time_end - time_sta
+	time_list.append(elapsed_time)
+
+
+	return 1
+
+
+def do_order_list_full_only2(calc_func, order_list, multiprocess_result_list, multiprocess_change_stage, db_file_place, time_list):
+
+	time_sta = time.time()
+
+
+	for order_list_item in order_list:
+		print("start", order_list_item[3])
 		# 要追加実装
 		if order_list_item[1] == "add" or order_list_item[1] == "delete":
 			while multiprocess_change_stage.value != int(order_list_item[4]) - 0.5:
@@ -408,14 +491,15 @@ def do_order_list_full_only(calc_func, order_list, multiprocess_result_list, mul
 			answer_item = calc_func(order_list_item[0], order_list_item[1], order_list_item[2], db_file_place)
 			multiprocess_result_list.append([answer_item, order_list_item[3]])
 			if multiprocess_change_stage.value < order_list_item[4]:
-				multiprocess_change_stage.value = order_list_item[4]			
+				multiprocess_change_stage.value = order_list_item[4]	
+	
 	
 	time_end = time.time()
 	elapsed_time = time_end - time_sta
 	time_list.append(elapsed_time)
+	
 
 	return 1
-
 
 #　並列処理＋完全準同型のみ
 def parallel_distribute_order_do_full_only(order_list, full_db_file_place):
@@ -429,7 +513,6 @@ def parallel_distribute_order_do_full_only(order_list, full_db_file_place):
 		else:
 			full_order_list_2.append(order_list[item_num])
 
-	print(order_list)
 
 	# #fullのみで
 	manager = multiprocessing.Manager()
@@ -440,15 +523,20 @@ def parallel_distribute_order_do_full_only(order_list, full_db_file_place):
 		change_stage = Value("d", 0.5)
 	else:
 		change_stage = Value("d", 0.0)
+	# 同じtargetだとダメらしい？
 	full_process_1 = Process(target=do_order_list_full_only, args=(calc_change_full_encry, full_order_list_1,multiprocess_result_list, change_stage, full_db_file_place, full_time1, ))
-	full_process_2 = Process(target=do_order_list_full_only, args=(calc_change_full_encry, full_order_list_2,multiprocess_result_list, change_stage, full_db_file_place, full_time2, ))
+	full_process_2 = Process(target=do_order_list_full_only2, args=(calc_change_full_encry, full_order_list_2,multiprocess_result_list, change_stage, full_db_file_place, full_time2, ))
 	# 続き
 	full_process_1.start()
 	full_process_2.start()
+
+		
 	full_process_1.join()
 	full_process_2.join()
 
-	print(multiprocess_result_list)
+
+
+
 	return multiprocess_result_list, full_time1, full_time2
 
 
@@ -700,7 +788,7 @@ def caluculate_test(caluculate_method, encrypt_method):
 						with open(record_json_name, "w") as f:
 							json.dump(record, f, indent = 4)
 
-def system_test(system_method):
+def system_test(system_method, bias_method):
 	
 	record_json_name = "./record/system/" + system_method + "/" + system_method+ "_record.json"
 
@@ -710,13 +798,15 @@ def system_test(system_method):
 	record["title"] = system_method
 
 	encrypted_json_folder = "5.2"
-	db_size = ["db300"]
-	order_count = ["300"]
+	db_size = ["db100"]
+	order_count = ["50"]
 	change_order_ratio_config = ["0", "0.2", "0.4", "0.6", "0.8", "1.0"]
-	bias_size = 100
-	exp_count_config = 2
+	# change_order_ratio_config = ["1.0"]
+	bias_size = 50
+	exp_count_config = 1
 	sample_count_config = 1
-	bias_method = ["even", "bias"]
+
+
 
 	for exp_count in range(exp_count_config):
 		if system_method not in record:
@@ -730,15 +820,107 @@ def system_test(system_method):
 				for db_size_item in db_size:
 					if db_size_item not in record[system_method][bias_method_item][change_order_ratio_item]:
 						record[system_method][bias_method_item][change_order_ratio_item][db_size_item] = {}
-						for order_count_item in order_count:
-							if order_count_item not in record[system_method][bias_method_item][change_order_ratio_item][db_size_item]:
-								record[system_method][bias_method_item][change_order_ratio_item][db_size_item][order_count_item] = {}
+					for order_count_item in order_count:
+						if order_count_item not in record[system_method][bias_method_item][change_order_ratio_item][db_size_item]:
+							record[system_method][bias_method_item][change_order_ratio_item][db_size_item][order_count_item] = {}
+						for sample_no in range(1,sample_count_config + 1):
+							if str(sample_no) not in record[system_method][bias_method_item][change_order_ratio_item][db_size_item][order_count_item]:
+								if system_method == "add_full":
+									record[system_method][bias_method_item][change_order_ratio_item][db_size_item][order_count_item][str(sample_no)] = {"add": [], "full" : []}
+								elif system_method == "full_only":
+									record[system_method][bias_method_item][change_order_ratio_item][db_size_item][order_count_item][str(sample_no)] = {"full_1": [], "full_2" : []}
+								else: 
+									print("not match system_method")
+								
+
+							#実験
+							add_encrypted_original_data_name = "./data/encrypted_data/add_encry/" + encrypted_json_folder + "/" + db_size_item[2:] + "p_" + encrypted_json_folder + "_1.json"
+							full_encrypted_original_data_name = "./data/encrypted_data/full_encry/" + encrypted_json_folder + "/" + db_size_item[2:] + "p_" + encrypted_json_folder + "_1.json"
+
+							add_exp_data_name = "./data/experimented_data/add_encry/" + encrypted_json_folder + "/" + db_size_item[2:] + "p_" + encrypted_json_folder + "_1.json"
+							full_exp_data_name = "./data/experimented_data/full_encry/" + encrypted_json_folder + "/" + db_size_item[2:] + "p_" + encrypted_json_folder + "_1.json"
+
+							## データの初期化
+							add_original_json = open(add_encrypted_original_data_name,'r')
+							add_original_json_data = json.load(add_original_json)
+							with open(add_exp_data_name, "w") as f:
+								json.dump(add_original_json_data, f, indent = 4)
+							full_original_json = open(full_encrypted_original_data_name,'r')
+							full_original_json_data = json.load(full_original_json)
+							with open(full_exp_data_name, "w") as f:
+								json.dump(full_original_json_data, f, indent = 4)
+
+							
+							order_file_name = order_file = "./order/system/" + bias_method_item + "/" + db_size_item + "/" + db_size_item + "_*"+ order_count_item + "_" + change_order_ratio_item + "_" + str(sample_no) + ".json"
+							order_file = open(order_file_name,'r')
+							order_list = json.load(order_file)
+
+
+							if system_method == "add_full":
+								result_list, time_add, time_full = parallel_distribute_order_do_add_full(order_list, add_exp_data_name, full_exp_data_name)
+								record[system_method][bias_method_item][change_order_ratio_item][db_size_item][order_count_item][str(sample_no)]["add"].append(list(time_add)[0])
+								record[system_method][bias_method_item][change_order_ratio_item][db_size_item][order_count_item][str(sample_no)]["full"].append(list(time_full)[0])
+							elif system_method == "full_only":
+								result_list, time_1, time_2 = parallel_distribute_order_do_full_only(order_list, full_exp_data_name)
+								record[system_method][bias_method_item][change_order_ratio_item][db_size_item][order_count_item][str(sample_no)]["full_1"].append(list(time_1)[0])
+								record[system_method][bias_method_item][change_order_ratio_item][db_size_item][order_count_item][str(sample_no)]["full_2"].append(list(time_2)[0])
+							else:
+								print("not match system method")
+
+				
+							result_json_name = "./data/system_result/" + system_method + "/" + bias_method_item + "/" + db_size_item + "_*"+ order_count_item + "_" + change_order_ratio_item + "_" + str(sample_no) + ".json"
+							with open(result_json_name, "w") as f:
+								json.dump(list(result_list), f, indent = 4)
+							print(list(result_list))
+
+							with open(record_json_name, "w") as f:
+								json.dump(record, f, indent = 4)
+
+def system_test_stdev_ratio(system_method, bias_method):
+	
+	record_json_name = "./record/system/" + system_method + "/" + system_method+ "_stdev_ratio_record.json"
+
+	record_file = open(record_json_name,'r')
+	record = json.load(record_file)
+
+	record["title"] = system_method
+
+	encrypted_json_folder = "5.2"
+	db_size = ["db100"]
+	order_count = ["50"]
+	change_order_ratio_config = ["0.2"]
+	# change_order_ratio_config = ["1.0"]
+	bias_size = 50
+	exp_count_config = 1
+	sample_count_config = 1
+	stdev_order_ratio_config = ["0", "0.25", "0.5", "0.75", "1.0"]
+
+
+
+	for exp_count in range(exp_count_config):
+		if system_method not in record:
+			record[system_method] = {}
+		for  bias_method_item in bias_method:
+			if bias_method_item not in record[system_method]:
+				record[system_method][bias_method_item] = {}
+			for change_order_ratio_item in change_order_ratio_config:
+				if change_order_ratio_item not in record[system_method][bias_method_item]:
+					record[system_method][bias_method_item][change_order_ratio_item] = {}
+				for db_size_item in db_size:
+					if db_size_item not in record[system_method][bias_method_item][change_order_ratio_item]:
+						record[system_method][bias_method_item][change_order_ratio_item][db_size_item] = {}
+					for order_count_item in order_count:
+						if order_count_item not in record[system_method][bias_method_item][change_order_ratio_item][db_size_item]:
+							record[system_method][bias_method_item][change_order_ratio_item][db_size_item][order_count_item] = {}
+						for stdev_order_ratio_item in stdev_order_ratio_config:
+							if stdev_order_ratio_item not in record[system_method][bias_method_item][change_order_ratio_item][db_size_item][order_count_item]:
+								record[system_method][bias_method_item][change_order_ratio_item][db_size_item][order_count_item][stdev_order_ratio_item] = {}
 							for sample_no in range(1,sample_count_config + 1):
-								if sample_no not in record[system_method][bias_method_item][change_order_ratio_item][db_size_item][order_count_item]:
+								if str(sample_no) not in record[system_method][bias_method_item][change_order_ratio_item][db_size_item][order_count_item][stdev_order_ratio_item] :
 									if system_method == "add_full":
-										record[system_method][bias_method_item][change_order_ratio_item][db_size_item][order_count_item][str(sample_no)] = {"add": [], "full" : []}
+										record[system_method][bias_method_item][change_order_ratio_item][db_size_item][order_count_item][stdev_order_ratio_item] [str(sample_no)] = {"add": [], "full" : []}
 									elif system_method == "full_only":
-										record[system_method][bias_method_item][change_order_ratio_item][db_size_item][order_count_item][str(sample_no)] = {"full_1": [], "full_2" : []}
+										record[system_method][bias_method_item][change_order_ratio_item][db_size_item][order_count_item][stdev_order_ratio_item] [str(sample_no)] = {"full_1": [], "full_2" : []}
 									else: 
 										print("not match system_method")
 									
@@ -761,29 +943,33 @@ def system_test(system_method):
 									json.dump(full_original_json_data, f, indent = 4)
 
 								
-								order_file_name = order_file = "./order/system/" + bias_method_item + "/db" + db_size_item + "/db" + db_size_item + "_*"+ order_count_item + "_" + change_order_ratio_item + "_" + str(sample_no) + ".json"
+								order_file_name = order_file = "./order/system/" + bias_method_item + "/" + db_size_item + "/" + db_size_item + "_*"+ order_count_item + "_" + change_order_ratio_item + "_" + stdev_order_ratio_item + "_" + str(sample_no) + ".json"
 								order_file = open(order_file_name,'r')
 								order_list = json.load(order_file)
 
 
 								if system_method == "add_full":
 									result_list, time_add, time_full = parallel_distribute_order_do_add_full(order_list, add_exp_data_name, full_exp_data_name)
-									record[system_method][bias_method_item][change_order_ratio_item][db_size_item][order_count_item][str(sample_no)]["add"].append(time_add)
-									record[system_method][bias_method_item][change_order_ratio_item][db_size_item][order_count_item][str(sample_no)]["full"].append(time_full)
+									record[system_method][bias_method_item][change_order_ratio_item][db_size_item][order_count_item][str(sample_no)]["add"].append(list(time_add)[0])
+									record[system_method][bias_method_item][change_order_ratio_item][db_size_item][order_count_item][str(sample_no)]["full"].append(list(time_full)[0])
 								elif system_method == "full_only":
 									result_list, time_1, time_2 = parallel_distribute_order_do_full_only(order_list, full_exp_data_name)
-									record[system_method][bias_method_item][change_order_ratio_item][db_size_item][order_count_item][str(sample_no)]["full_1"].append(time_1)
-									record[system_method][bias_method_item][change_order_ratio_item][db_size_item][order_count_item][str(sample_no)]["full_2"].append(time_2)
+									record[system_method][bias_method_item][change_order_ratio_item][db_size_item][order_count_item][str(sample_no)]["full_1"].append(list(time_1)[0])
+									record[system_method][bias_method_item][change_order_ratio_item][db_size_item][order_count_item][str(sample_no)]["full_2"].append(list(time_2)[0])
 								else:
 									print("not match system method")
-								
-								result_json_name = "./system_result/" + system_method + "/" + "bias_method_item" + "/db" + db_size_item + "_*"+ order_count_item + "_" + change_order_ratio_item + "_" + str(sample_no) + ".json"
-								with open(result_json_name, "w") as f:
-									json.dump(result_list, f, indent = 4)
 
+					
+								result_json_name = "./data/system_result/" + system_method + "/" + bias_method_item + "/" + db_size_item + "_*"+ order_count_item + "_" + change_order_ratio_item + "_" + stdev_order_ratio_item + "_" + str(sample_no) + ".json"
+								with open(result_json_name, "w") as f:
+									json.dump(list(result_list), f, indent = 4)
+								print(list(result_list))
 
 								with open(record_json_name, "w") as f:
 									json.dump(record, f, indent = 4)
+
+
+
 
 
 
@@ -882,8 +1068,15 @@ def main():
 	# caluculate_test("stdev", "full")
 
 	# システムテスト
-	system_test("add_full")
-	
+	# for i in range(3):
+	# 	# system_test("add_full",["even"])
+	# 	# system_test("full_only", ["bias"])
+	# 	# system_test("add_full", ["bias"])
+	# 	# system_test("full_only",["even"])
+
+	for i in range(1):
+		system_test_stdev_ratio("add_full", ["even"])
+		system_test_stdev_ratio("full_only", ["even"])
 
 
 
